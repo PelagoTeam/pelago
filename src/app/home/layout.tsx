@@ -75,9 +75,6 @@ export default function HomeLayout({
                   <span className="text-sm font-medium">
                     {profile?.username ?? user.email}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    Signed in
-                  </span>
                 </div>
                 <Link href="/home/profile" className="flex items-center">
                   <Avatar className="h-9 w-9 ring-1 ring-border">

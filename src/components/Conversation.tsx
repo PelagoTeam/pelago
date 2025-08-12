@@ -1,9 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { InfoIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 
 export default function Conversation() {
   const [topic, setTopic] = useState("Haggling at a market");
@@ -56,26 +59,13 @@ export default function Conversation() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
+        <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
           {msgs.map((m, i) => (
-            <div
-              key={i}
-              className={m.role === "user" ? "text-right" : "text-left"}
-            >
-              <div
-                className={`inline-block rounded-2xl px-4 py-2 ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                {m.content}
-              </div>
-            </div>
+            <MessageBubble key={i} role={m.role} content={m.content} />
           ))}
         </div>
         <Separator />
-        <div className="flex items-center gap-3">
+        <div className="flex gap-3 items-center">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -88,5 +78,54 @@ export default function Conversation() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function MessageBubble({
+  role,
+  content,
+}: {
+  role: "user" | "assistant";
+  content: string;
+}) {
+  if (role === "assistant") {
+    return <AssistantMessageBubble content={content} />;
+  } else if (role === "user") {
+    return <UserMessageBubble content={content} />;
+  }
+}
+
+function AssistantMessageBubble({ content }: { content: string }) {
+  return (
+    <div className="text-left">
+      <div className="inline-block py-2 px-4 rounded-2xl bg-muted">
+        {content}
+      </div>
+    </div>
+  );
+}
+
+function UserMessageBubble({ content }: { content: string }) {
+  const [teacher, setTeacher] = useState<string | undefined>();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTeacher(
+        `${content} is not a good reply, you should instead try something else`,
+      );
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+  return (
+    <div className="flex gap-3 justify-end items-center">
+      <HoverCard>
+        <HoverCardTrigger>
+          <InfoIcon className={cn("w-5", teacher ?? "animate-pulse")} />
+        </HoverCardTrigger>
+        <HoverCardContent>{teacher}</HoverCardContent>
+      </HoverCard>
+      <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
+        {content}
+      </div>
+    </div>
   );
 }

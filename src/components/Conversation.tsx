@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, SendIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 
@@ -59,22 +59,22 @@ export default function Conversation() {
           <span className="font-normal text-muted-foreground">{topic}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-3">
         <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
           {msgs.map((m, i) => (
             <MessageBubble key={i} role={m.role} content={m.content} />
           ))}
         </div>
         <Separator />
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-3">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message…"
-            className="min-h-[60px]"
+            className="max-w-full h-9 resize-none min-h-9"
           />
-          <Button onClick={send} disabled={loading}>
-            {loading ? "Thinking…" : "Send"}
+          <Button onClick={send} disabled={loading} size="icon">
+            <SendIcon />
           </Button>
         </div>
       </CardContent>

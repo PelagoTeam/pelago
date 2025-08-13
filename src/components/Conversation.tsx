@@ -57,8 +57,46 @@ export default function Conversation({ id }: { id: string }) {
     if (!conversation) {
       return;
     }
+
+    // Save previous state so we can rollback on error
+    const prevConversation = conversation;
+    const prevInput = input;
+
     setLoading(true);
-    const body = { topic: conversation.topic, message: input };
+
+    // Hardcoded UUIDs (as requested)
+    const userMsgId = "20f97e2f-bf29-4bbb-accb-9001ebdf8620";
+    const assistantMsgId = "7325ab2e-1272-4503-bf12-ed206f925f3d";
+
+    // Optimistic messages
+    const optimisticUserMsg = {
+      id: userMsgId,
+      role: "user",
+      content: input,
+      // Optional UI flags
+      sending: false,
+    };
+    const optimisticAssistantMsg = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "...", // placeholder while waiting for real reply
+      sending: true,
+    };
+
+    // 1) Optimistically add messages to conversation
+    setConversation((c) => {
+      if (!c) return c;
+      return {
+        ...c,
+        messages: [...c.messages, optimisticUserMsg, optimisticAssistantMsg],
+      };
+    });
+
+    // Clear input optimistically
+    setInput("");
+
+    const body = { topic: conversation.topic, message: prevInput };
+
     try {
       // TODO: send message to AI, get reply (conversation agent) and get remarks on reply (teacher agent)
       const res = await fetch("/api/chat", {
@@ -66,32 +104,47 @@ export default function Conversation({ id }: { id: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
+
       const data = await res.json();
-      setConversation((conversation) => {
-        if (!conversation) {
-          return undefined;
-        }
+
+      // 2) On success: replace the optimistic assistant message with the real reply.
+      // Optionally attach remarks to the user message if returned by the server.
+      setConversation((c) => {
+        if (!c) return c;
         return {
-          ...conversation,
-          messages: [
-            ...conversation.messages,
-            {
-              id: "20f97e2f-bf29-4bbb-accb-9001ebdf8620",
-              role: "user",
-              content: input,
-              remarks: `${input} is not a good reply, you should instead try something else`,
-            },
-            {
-              id: "7325ab2e-1272-4503-bf12-ed206f925f3d",
-              role: "assistant",
-              content: data.reply,
-            },
-          ],
+          ...c,
+          messages: c.messages.map((m) => {
+            if (m.id === assistantMsgId) {
+              return {
+                id: data.assistantId || assistantMsgId,
+                role: "assistant",
+                content: data.reply,
+                sending: false,
+              };
+            }
+            if (m.id === userMsgId) {
+              return {
+                ...m,
+                remarks: data.remarks ?? m.remarks,
+              };
+            }
+            return m;
+          }),
         };
       });
-      setInput("");
     } catch (e) {
-      console.log(e);
+      console.error("Send failed:", e);
+
+      // 3) Rollback: restore previous conversation and input
+      setConversation(prevConversation);
+      setInput(prevInput);
+
+      // Optionally: surface error to the user (toast / error state)
+      // setError?.("Failed to send message. Please try again.");
     } finally {
       setLoading(false);
     }

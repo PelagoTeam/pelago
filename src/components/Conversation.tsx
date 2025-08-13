@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -91,7 +92,7 @@ function MessageBubble({
   if (role === "assistant") {
     return <AssistantMessageBubble content={content} />;
   } else if (role === "user") {
-    return <UserMessageBubble content={content} />;
+    return <UserMessageBubble content={content} remarks="" />;
   }
 }
 
@@ -105,7 +106,13 @@ function AssistantMessageBubble({ content }: { content: string }) {
   );
 }
 
-function UserMessageBubble({ content }: { content: string }) {
+function UserMessageBubble({
+  content,
+  remarks,
+}: {
+  content: string;
+  remarks: string;
+}) {
   const [teacher, setTeacher] = useState<string | undefined>();
   useEffect(() => {
     const timer = setTimeout(() => {

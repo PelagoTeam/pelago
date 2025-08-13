@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +11,7 @@ type Module = { module_id: string; title?: string };
 
 type Props = {
   modules: Module[];
-  progress: number; // number completed
+  progress: number;
   totalModules: number;
 };
 
@@ -52,8 +52,6 @@ export default function ZigZagRoadmap({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      {/* Header (unchanged) */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Course Roadmap</h2>
         <div className="flex items-center gap-3">
@@ -67,12 +65,10 @@ export default function ZigZagRoadmap({
         </div>
       </div>
 
-      {/* Stage */}
       <div
-        className="relative mx-auto w-full max-w-[520px] rounded-2xl bg-card p-6"
+        className="relative mx-auto w-full max-w-[520px] rounded-2xl bg-background p-6"
         style={{ height: containerHeight + 48 }}
       >
-        {/* Connectors (diagonal lines) */}
         {nodes.slice(1).map((n, k) => {
           const prev = nodes[k];
           const dx = n.x - prev.x;
@@ -98,13 +94,10 @@ export default function ZigZagRoadmap({
               }}
               className="pointer-events-none"
             >
-              {/* base track */}
               <div className="h-full w-full rounded-full bg-border" />
-              {/* done overlay */}
               {doneEdge && (
                 <div className="absolute inset-0 rounded-full bg-primary" />
               )}
-              {/* current overlay (hint) */}
               {!doneEdge && currentEdge && (
                 <div
                   className="absolute inset-0 rounded-full bg-primary/70"
@@ -118,7 +111,6 @@ export default function ZigZagRoadmap({
           );
         })}
 
-        {/* Nodes */}
         {nodes.map(({ i, m, x, y }) => {
           const st = stateFor(i);
           const clickable = st !== "locked";
@@ -147,7 +139,7 @@ export default function ZigZagRoadmap({
             >
               {st === "current" && (
                 <span className="absolute -top-10 rounded-md bg-secondary px-3 py-2 text-xs font-semibold text-secondary-foreground border-2 border-primary/40">
-                  START
+                  BEGIN
                 </span>
               )}
 

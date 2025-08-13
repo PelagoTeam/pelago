@@ -3,7 +3,7 @@ export type QuizQuestion = {
   prompt: string;
   answers: { id: string; text: string; correct?: boolean }[];
   hint?: string;
-  language: string; // e.g., "Thai", "Vietnamese"
+  language: string;
 };
 
 export type Question = {
@@ -27,4 +27,23 @@ export type Compose = {
   tokens: { id: string; text: string }[];
   explanation: string | null;
   answer_order: string[];
+};
+
+export type Profile = {
+  id: string;
+  username: string | null;
+  current_course: string | null; // ← safer
+};
+
+export type Module = {
+  module_id: string;
+  order: number;
+  course_id: string;
+};
+
+export type Stages = {
+  id: string;
+  title: string;
+  stage_number: number;
+  course_id: string;
 };

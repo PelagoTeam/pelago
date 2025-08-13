@@ -2,20 +2,14 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   useCallback,
+  useEffect,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-
-type Profile = {
-  id: string;
-  username: string | null;
-  created_at?: string;
-  current_course: string;
-};
+import type { User, Session } from "@supabase/supabase-js";
+import { Profile } from "@/lib/types";
 
 type Ctx = {
   user: User | null;
@@ -49,8 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from("Users")
         .select("id, username, current_course")
         .eq("id", u.id)
-        .maybeSingle();
-
+        .maybeSingle<Profile>();
       if (error) {
         console.error("[Auth] loadProfile error:", error);
         setProfile(null);
@@ -62,31 +55,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
 
+    // 1) Prime initial state
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase.auth.getUser();
-      if (error) console.error("[Auth] getUser error:", error);
-      if (!mounted) return;
-      setUser(data.user ?? null);
-      await loadProfile(data.user ?? null);
-      if (mounted) setLoading(false);
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+      if (error) console.error("[Auth] getSession error:", error);
+      if (cancelled) return;
+
+      const u = session?.user ?? null;
+      setUser(u);
+      await loadProfile(u);
+      if (!cancelled) setLoading(false); // always end initial load
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const nextUser = session?.user ?? null;
-        setUser(nextUser);
-        setLoading(true);
-        await loadProfile(nextUser);
-        setLoading(false);
+    // 2) Subscribe for future changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      async (event, session: Session | null) => {
+        if (cancelled) return;
+        const u = session?.user ?? null;
+        setUser(u);
+
+        // Optional: show a spinner only for explicit transitions
+        // setLoading(event === "SIGNED_IN" || event === "SIGNED_OUT");
+
+        await loadProfile(u);
+
+        // if you enabled the spinner above, you can turn it off here
+        // if (event === "SIGNED_IN" || event === "SIGNED_OUT") setLoading(false);
       }
     );
 
     return () => {
-      mounted = false;
-      sub?.subscription?.unsubscribe();
+      cancelled = true;
+      subscription.unsubscribe();
     };
   }, [supabase, loadProfile]);
 
@@ -94,18 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     const { data, error } = await supabase.auth.getUser();
     if (error) console.error("[Auth] refresh getUser error:", error);
-    const fresh = data.user ?? null;
-    setUser(fresh);
-    await loadProfile(fresh);
+    const u = data.user ?? null;
+    setUser(u);
+    await loadProfile(u);
     setLoading(false);
   }, [supabase, loadProfile]);
 
   const signOut = useCallback(async () => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("[Auth] signOut error:", error);
-    }
+    if (error) console.error("[Auth] signOut error:", error);
     setUser(null);
     setProfile(null);
     setLoading(false);

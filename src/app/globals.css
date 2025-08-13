@@ -45,15 +45,15 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.99 0.01 95);
-  --foreground: oklch(0.2 0.02 80);
+  --background: oklch(97.519% 0.02008 94.546);
+  --foreground: oklch(26.17% 0.03161 82.475);
   --card: oklch(0.995 0.008 95);
   --card-foreground: var(--foreground);
   --popover: oklch(0.995 0.008 95);
   --popover-foreground: var(--foreground);
   --primary: oklch(0.68 0.12 70);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.965 0.015 95);
+  --secondary: oklch(91.196% 0.04587 68.215);
   --secondary-foreground: oklch(0.28 0.03 80);
   --muted: oklch(0.97 0.01 95);
   --muted-foreground: oklch(0.54 0.02 80);
@@ -118,20 +118,5 @@
   }
   body {
     @apply bg-background text-foreground;
-  }
-}
-
-@layer utilities {
-  @keyframes bob {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-6px);
-    }
-  }
-  .animate-bob {
-    animation: bob 2.8s ease-in-out infinite;
   }
 }

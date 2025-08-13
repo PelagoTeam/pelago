@@ -6,63 +6,111 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { InfoIcon, SendIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 
-export default function Conversation() {
-  const [topic, setTopic] = useState("Haggling at a market");
+type Conversation = {
+  topic: string;
+  messages: Message[];
+};
+
+type Message =
+  | {
+      id: string;
+      role: "user";
+      content: string;
+      remarks: string;
+    }
+  | {
+      id: string;
+      role: "assistant";
+      content: string;
+    };
+
+export default function Conversation({ id }: { id: string }) {
+  const [conversation, setConversation] = useState<Conversation | undefined>();
   const [input, setInput] = useState("");
-  const [msgs, setMsgs] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([
-    {
-      role: "assistant",
-      content:
-        "Sawasdee! You're at a Bangkok market. Try greeting the vendor and ask for the price.",
-    },
-  ]);
   const [loading, setLoading] = useState(false);
 
-  const send = async () => {
-    if (!input.trim()) return;
+  useEffect(() => {
+    let running = false;
+    (async () => {
+      if (!running) {
+        running = true;
+        const conversation = await getConversation(id);
+        setConversation(conversation);
+      }
+    })();
+    return () => {
+      running = true;
+    };
+  }, [id]);
+
+  if (!conversation) {
+    // TODO: loading state
+    return <div>loading...</div>;
+  }
+
+  async function send() {
+    if (!input.trim()) {
+      return;
+    }
+    if (!conversation) {
+      return;
+    }
     setLoading(true);
-    const body = { topic, message: input };
-    setMsgs((m) => [...m, { role: "user", content: input }]);
-    setInput("");
+    const body = { topic: conversation.topic, message: input };
     try {
+      // TODO: send message to AI, get reply (conversation agent) and get remarks on reply (teacher agent)
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      setMsgs((m) => [...m, { role: "assistant", content: data.reply }]);
+      setConversation((conversation) => {
+        if (!conversation) {
+          return undefined;
+        }
+        return {
+          ...conversation,
+          messages: [
+            ...conversation.messages,
+            {
+              id: "20f97e2f-bf29-4bbb-accb-9001ebdf8620",
+              role: "user",
+              content: input,
+              remarks: `${input} is not a good reply, you should instead try something else`,
+            },
+            {
+              id: "7325ab2e-1272-4503-bf12-ed206f925f3d",
+              role: "assistant",
+              content: data.reply,
+            },
+          ],
+        };
+      });
+      setInput("");
     } catch (e) {
-      setMsgs((m) => [
-        ...m,
-        {
-          role: "assistant",
-          content:
-            "(Mock) Try saying: 'Khop khun krub/ka, can give discount?'.",
-        },
-      ]);
+      console.log(e);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <Card className="shadow-md">
       <CardHeader>
         <CardTitle>
           Conversation •{" "}
-          <span className="font-normal text-muted-foreground">{topic}</span>
+          <span className="font-normal text-muted-foreground">
+            {conversation.topic}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
-          {msgs.map((m, i) => (
-            <MessageBubble key={i} role={m.role} content={m.content} />
+          {conversation.messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
           ))}
         </div>
         <Separator />
@@ -82,17 +130,13 @@ export default function Conversation() {
   );
 }
 
-function MessageBubble({
-  role,
-  content,
-}: {
-  role: "user" | "assistant";
-  content: string;
-}) {
-  if (role === "assistant") {
-    return <AssistantMessageBubble content={content} />;
-  } else if (role === "user") {
-    return <UserMessageBubble content={content} remarks="" />;
+function MessageBubble({ message }: { message: Message }) {
+  if (message.role === "assistant") {
+    return <AssistantMessageBubble content={message.content} />;
+  } else if (message.role === "user") {
+    return (
+      <UserMessageBubble content={message.content} remarks={message.remarks} />
+    );
   }
 }
 
@@ -113,26 +157,32 @@ function UserMessageBubble({
   content: string;
   remarks: string;
 }) {
-  const [teacher, setTeacher] = useState<string | undefined>();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTeacher(
-        `${content} is not a good reply, you should instead try something else`,
-      );
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
   return (
     <div className="flex gap-3 justify-end items-center">
       <HoverCard>
         <HoverCardTrigger>
-          <InfoIcon className={cn("w-5", teacher ?? "animate-pulse")} />
+          <InfoIcon className="w-5" />
         </HoverCardTrigger>
-        <HoverCardContent>{teacher}</HoverCardContent>
+        <HoverCardContent>{remarks}</HoverCardContent>
       </HoverCard>
       <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
         {content}
       </div>
     </div>
   );
+}
+
+async function getConversation(id: string): Promise<Conversation> {
+  // TODO: get conversation by id from db
+  return {
+    topic: "Haggling at a market",
+    messages: [
+      {
+        id: "ea88275c-8a9f-4c90-8cfe-c1463adfb88c",
+        role: "assistant",
+        content:
+          "Sawasdee! You're at a Bangkok market. Try greeting the vendor and ask for the price.",
+      },
+    ],
+  };
 }

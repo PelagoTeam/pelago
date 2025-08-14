@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <AuthProvider>
-          <div className="container py-6">{children}</div>
+          <div>{children}</div>
         </AuthProvider>
       </body>
     </html>

@@ -56,10 +56,8 @@ export default function ComposeQuiz({
   }
 
   return (
-    <div className="rounded-2xl border p-5 shadow-sm">
+    <div className="rounded-2xl border p-5 shadow-sm bg-primary-foreground">
       <h2 className="text-lg font-medium mb-4">{prompt}</h2>
-
-      {/* Fixed-position token bank (no movement) */}
       <div className="mb-4">
         <div className={`flex flex-wrap gap-2 ${locked ? "opacity-60" : ""}`}>
           {data.tokens.map((t) => {
@@ -71,21 +69,16 @@ export default function ComposeQuiz({
                 type="button"
                 onClick={() => toggleToken(t.id)}
                 disabled={locked}
-                className={`relative rounded-full border px-3 py-1 text-sm transition
+                className={`relative rounded-full border px-3 py-1 text-md transition
                   ${
                     selected
-                      ? "border-black bg-gray-50"
+                      ? "bg-gray-50 text-transparent pointer-events-none"
                       : "border-gray-200 hover:bg-gray-50"
                   }
                   ${locked ? "cursor-not-allowed" : "cursor-pointer"}
                 `}
               >
                 {t.text}
-                {selected && (
-                  <span className="ml-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full border text-xs">
-                    {idx + 1}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -101,7 +94,7 @@ export default function ComposeQuiz({
               type="button"
               onClick={() => removeToken(id)}
               disabled={locked}
-              className={`rounded-full border px-3 py-1 text-sm
+              className={`rounded-full border px-3 py-1 text-md
                 ${locked ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-50"}
               `}
               title="Remove"

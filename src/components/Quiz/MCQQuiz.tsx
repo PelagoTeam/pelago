@@ -38,7 +38,7 @@ export default function MCQQuiz({
   }
 
   return (
-    <div className="rounded-2xl border p-5 shadow-sm">
+    <div className="rounded-2xl border p-5 shadow-sm bg-primary-foreground">
       <h2 className="text-lg font-medium mb-4">{prompt}</h2>
 
       <div className="flex flex-col gap-2">

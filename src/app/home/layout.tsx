@@ -32,7 +32,7 @@ function NavItem({ href, label }: { href: string; label: string }) {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
         isActive
           ? "bg-primary text-primary-foreground shadow"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+          : "text-muted-foreground hover:text-foreground hover:bg-accent",
       )}
     >
       {label}
@@ -71,7 +71,7 @@ export default function HomeLayout({
           if (data) {
             setUserCourses(data);
             setCurrentCourse(
-              data.find((c) => c.course_id === profile.current_course)
+              data.find((c) => c.course_id === profile.current_course),
             );
           }
         } catch (e) {
@@ -114,27 +114,20 @@ export default function HomeLayout({
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-screen-xl px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 justify-between w-full">
             <h1
               className={cn(
                 "text-xl font-semibold tracking-tight",
-                "bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
+                "bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent",
               )}
             >
               Pelago
             </h1>
 
             {/* Desktop nav */}
-            <nav className="hidden sm:flex items-center gap-2 bg-muted/30 rounded-full p-1">
-              <NavItem href="/home" label="Practice" />
-              <NavItem href="/home/conversation" label="Conversation" />
-              <NavItem href="/home/leaderboard" label="Leaderboard" />
-            </nav>
-          </div>
 
-          <div className="flex items-center gap-3">
-            {user && !loading && currentCourse ? (
-              <>
+            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-2 py-1 ring-1 ring-primary/20">
+              {user && !loading && currentCourse ? (
                 <HoverCard openDelay={120} closeDelay={80}>
                   <HoverCardTrigger asChild>
                     <Avatar className="h-9 w-9 ring-1 ring-border cursor-pointer">
@@ -172,14 +165,14 @@ export default function HomeLayout({
                               "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                               isActive
                                 ? "border-primary/50 bg-primary/5"
-                                : "border-border"
+                                : "border-border",
                             )}
                             title={c.language}
                           >
                             <Avatar
                               className={cn(
                                 "h-10 w-10 ring-1 ring-border",
-                                isActive && "ring-primary/60"
+                                isActive && "ring-primary/60",
                               )}
                             >
                               <AvatarImage src={c.icon_url} alt={c.language} />
@@ -206,35 +199,63 @@ export default function HomeLayout({
                     </div>
                   </HoverCardContent>
                 </HoverCard>
-                <Link href="/home/profile" className="flex items-center gap-3">
+              ) : null}
+              <nav className="hidden sm:flex items-center gap-2 bg-muted/30 rounded-full p-1">
+                <NavItem href="/home" label="Practice" />
+                <NavItem href="/home/conversation" label="Conversation" />
+                <NavItem href="/home/leaderboard" label="Leaderboard" />
+              </nav>
+            </div>
+            <div className="flex items-center gap-3">
+              {user && !loading && currentCourse ? (
+                <>
                   <div className="hidden sm:flex flex-col items-end leading-tight">
                     <span className="text-sm font-medium">
                       {profile?.username ?? user.email}
                     </span>
                   </div>
-                  <Avatar className="h-9 w-9 ring-1 ring-border">
-                    <AvatarImage src={undefined} alt="avatar" />
-                    <AvatarFallback className="bg-muted text-foreground">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <HoverCard openDelay={120} closeDelay={80}>
+                    <HoverCardTrigger asChild>
+                      <Avatar className="h-9 w-9 ring-1 ring-border">
+                        <AvatarImage src={undefined} alt="avatar" />
+                        <AvatarFallback className="bg-muted text-foreground">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      align="center"
+                      side="bottom"
+                      className="w-auto p-3 border bg-card"
+                    >
+                      <Link
+                        href="/home/profile"
+                        className="flex items-center gap-3"
+                      >
+                        <Button variant="ghost" className="hover:bg-accent">
+                          View Profile
+                        </Button>
+                      </Link>
+                      <Separator className="my-2" />
+                      <Button
+                        variant="ghost"
+                        className="hover:bg-accent"
+                        onClick={async () => {
+                          await signOut();
+                          router.push("/");
+                        }}
+                      >
+                        Sign out
+                      </Button>
+                    </HoverCardContent>
+                  </HoverCard>
+                </>
+              ) : (
+                <Link href="/login">
+                  <Button>Sign in</Button>
                 </Link>
-                <Button
-                  variant="ghost"
-                  className="hover:bg-accent"
-                  onClick={async () => {
-                    await signOut();
-                    router.push("/");
-                  }}
-                >
-                  Sign out
-                </Button>
-              </>
-            ) : (
-              <Link href="/login">
-                <Button>Sign in</Button>
-              </Link>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

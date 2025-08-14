@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { InfoIcon, SendIcon } from "lucide-react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../ui/hover-card";
 
 type Conversation = {
   topic: string;
@@ -160,6 +164,7 @@ export default function Conversation({ id }: { id: string }) {
           </span>
         </CardTitle>
       </CardHeader>
+      <p>Test</p>
       <CardContent className="flex flex-col gap-3">
         <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
           {conversation.messages.map((message) => (

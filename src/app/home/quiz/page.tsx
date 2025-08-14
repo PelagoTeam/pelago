@@ -61,6 +61,7 @@ export default function QuizPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [roundQueue, setRoundQueue] = useState<Question[]>([]);
   const [retryBucket, setRetryBucket] = useState<Question[]>([]);
@@ -88,7 +89,6 @@ export default function QuizPage() {
           .select("question_id, module_id, position, type, prompt, payload")
           .eq("module_id", moduleId)
           .order("position", { ascending: true });
-        console.log("questions", data);
         if (qErr) throw qErr;
 
         const normalized: Question[] = (data ?? [])
@@ -146,8 +146,8 @@ export default function QuizPage() {
     current?.type === "mcq"
       ? current.payload.explanation
       : current?.type === "compose"
-      ? current.payload.explanation
-      : null;
+        ? current.payload.explanation
+        : null;
 
   // -------- submit & next flow --------
   function onChildSubmit(res: { correct: boolean }) {
@@ -185,29 +185,56 @@ export default function QuizPage() {
   async function completeAndExit() {
     try {
       if (profile?.id) {
+        setSaving(true);
         const { data: p, error: selErr } = await supabase
           .from("user_courses")
-          .select("progress")
+          .select("stage, module")
           .eq("user_id", profile.id)
           .eq("course_id", profile.current_course)
           .single();
         if (selErr) throw selErr;
-        const currentProgress = (p?.progress ?? 0) as number;
+        const currentModule = (p?.module ?? 0) as number;
+        const currentStage = (p?.stage ?? 0) as number;
 
-        const { data: moduleOrder, error: moErr } = await supabase
+        const { data: s, error: stageErr } = await supabase
+          .from("stages")
+          .select("id")
+          .eq("course_id", profile.current_course)
+          .eq("stage_number", currentStage)
+          .single();
+        if (stageErr) throw stageErr;
+
+        const stage_id = (s?.id ?? 0) as number;
+
+        console.log("currentModule", currentModule);
+        console.log("currentStage", currentStage);
+
+        const { data: modules, error: moErr } = await supabase
           .from("modules")
           .select("order")
-          .eq("module_id", moduleId)
-          .single();
+          .eq("stage_id", stage_id);
         if (moErr) throw moErr;
-        const moduleOrderNumber = (moduleOrder?.order ?? 0) as number;
-        if (moduleOrderNumber >= currentProgress) {
+        const totalModules = (modules?.length ?? 0) as number;
+        console.log("totalModules", totalModules);
+        if (totalModules > currentModule + 1) {
+          console.log("Updating progress...");
           const { error: updErr } = await supabase
             .from("user_courses")
-            .update({ progress: currentProgress + 1 })
+            .update({ module: currentModule + 1 })
             .eq("user_id", profile.id)
             .eq("course_id", profile.current_course);
           if (updErr) throw updErr;
+        } else {
+          try {
+            const { error } = await supabase.rpc("incrementuserstage", {
+              module_number: currentModule,
+              stage_number: currentStage,
+              course_id: profile.current_course,
+            });
+            if (error) throw error;
+          } catch (e) {
+            console.error("Failed to update stage:", e);
+          }
         }
       }
     } catch (e) {
@@ -224,6 +251,7 @@ export default function QuizPage() {
         console.error("Failed to update module completion:", e);
       }
       router.replace("/home");
+      setSaving(false);
     }
   }
 
@@ -296,9 +324,7 @@ export default function QuizPage() {
               : "bg-red-50 text-red-700 border border-red-200"
           }`}
         >
-          {checked === "correct"
-            ? "Correct!"
-            : "Not quite — this one will come back after the round."}
+          {checked === "correct" ? "Correct!" : "Incorrect!"}
           {explanation ? (
             <div className="mt-1 text-gray-600">{explanation}</div>
           ) : null}

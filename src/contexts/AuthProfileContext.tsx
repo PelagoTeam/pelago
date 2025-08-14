@@ -50,8 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setProfile(data ?? null);
+      console.log("loadProfile", data);
     },
-    [supabase]
+    [supabase],
   );
 
   useEffect(() => {
@@ -89,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // if you enabled the spinner above, you can turn it off here
         // if (event === "SIGNED_IN" || event === "SIGNED_OUT") setLoading(false);
-      }
+      },
     );
 
     return () => {

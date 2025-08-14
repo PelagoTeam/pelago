@@ -10,6 +10,7 @@ export default function RequireAuth({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
+  console.log(user, loading);
   const router = useRouter();
 
   useEffect(() => {

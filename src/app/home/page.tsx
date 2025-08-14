@@ -66,7 +66,7 @@ export default function HomePage() {
         .eq("course_id", courseId)
         .eq(
           "stage_id",
-          stages?.filter((s) => s.stage_number === progress.stage + 1)[0]?.id
+          stages?.filter((s) => s.stage_number === progress.stage)[0]?.id,
         );
 
       if (qErr) {

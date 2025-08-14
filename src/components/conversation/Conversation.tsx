@@ -11,24 +11,29 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "../ui/hover-card";
+import { cn } from "@/lib/utils";
 
 type Conversation = {
   topic: string;
   messages: Message[];
 };
 
-type Message =
-  | {
-      id: string;
-      role: "user";
-      content: string;
-      remarks: string;
-    }
-  | {
-      id: string;
-      role: "assistant";
-      content: string;
-    };
+type Message = UserMessage | AssistantMessage;
+
+type UserMessage = {
+  id: string;
+  role: "user";
+  pending: boolean;
+  content: string;
+  remarks: string;
+};
+
+type AssistantMessage = {
+  id: string;
+  role: "assistant";
+  pending: boolean;
+  content: string;
+};
 
 export default function Conversation({ id }: { id: string }) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
@@ -68,23 +73,23 @@ export default function Conversation({ id }: { id: string }) {
 
     setLoading(true);
 
-    // Hardcoded UUIDs (as requested)
+    // Hardcoded UUIDs
     const userMsgId = "20f97e2f-bf29-4bbb-accb-9001ebdf8620";
     const assistantMsgId = "7325ab2e-1272-4503-bf12-ed206f925f3d";
 
     // Optimistic messages
-    const optimisticUserMsg = {
+    const optimisticUserMsg: Message = {
       id: userMsgId,
       role: "user",
+      pending: true,
       content: input,
-      // Optional UI flags
-      sending: false,
+      remarks: "...", // placeholder while waiting for real remarks
     };
-    const optimisticAssistantMsg = {
+    const optimisticAssistantMsg: Message = {
       id: assistantMsgId,
       role: "assistant",
+      pending: true,
       content: "...", // placeholder while waiting for real reply
-      sending: true,
     };
 
     // 1) Optimistically add messages to conversation
@@ -123,17 +128,19 @@ export default function Conversation({ id }: { id: string }) {
           ...c,
           messages: c.messages.map((m) => {
             if (m.id === assistantMsgId) {
+              const am = m as AssistantMessage;
               return {
-                id: data.assistantId || assistantMsgId,
-                role: "assistant",
+                ...am,
+                pending: false,
                 content: data.reply,
-                sending: false,
               };
             }
             if (m.id === userMsgId) {
+              const um = m as UserMessage;
               return {
-                ...m,
-                remarks: data.remarks ?? m.remarks,
+                ...um,
+                pending: false,
+                remarks: data.remarks,
               };
             }
             return m;
@@ -164,7 +171,6 @@ export default function Conversation({ id }: { id: string }) {
           </span>
         </CardTitle>
       </CardHeader>
-      <p>Test</p>
       <CardContent className="flex flex-col gap-3">
         <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
           {conversation.messages.map((message) => (
@@ -190,41 +196,35 @@ export default function Conversation({ id }: { id: string }) {
 
 function MessageBubble({ message }: { message: Message }) {
   if (message.role === "assistant") {
-    return <AssistantMessageBubble content={message.content} />;
+    return <AssistantMessageBubble message={message} />;
   } else if (message.role === "user") {
-    return (
-      <UserMessageBubble content={message.content} remarks={message.remarks} />
-    );
+    return <UserMessageBubble message={message} />;
   }
 }
 
-function AssistantMessageBubble({ content }: { content: string }) {
+function AssistantMessageBubble({ message }: { message: AssistantMessage }) {
   return (
     <div className="text-left">
       <div className="inline-block py-2 px-4 rounded-2xl bg-muted">
-        {content}
+        {message.content}
       </div>
     </div>
   );
 }
 
-function UserMessageBubble({
-  content,
-  remarks,
-}: {
-  content: string;
-  remarks: string;
-}) {
+function UserMessageBubble({ message }: { message: UserMessage }) {
   return (
     <div className="flex gap-3 justify-end items-center">
       <HoverCard>
         <HoverCardTrigger>
-          <InfoIcon className="w-5" />
+          <InfoIcon
+            className={cn("w-5", message.pending ? "animate-pulse" : "")}
+          />
         </HoverCardTrigger>
-        <HoverCardContent>{remarks}</HoverCardContent>
+        <HoverCardContent>{message.remarks}</HoverCardContent>
       </HoverCard>
       <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
-        {content}
+        {message.content}
       </div>
     </div>
   );
@@ -238,6 +238,7 @@ async function getConversation(id: string): Promise<Conversation> {
       {
         id: "ea88275c-8a9f-4c90-8cfe-c1463adfb88c",
         role: "assistant",
+        pending: false,
         content:
           "Sawasdee! You're at a Bangkok market. Try greeting the vendor and ask for the price.",
       },

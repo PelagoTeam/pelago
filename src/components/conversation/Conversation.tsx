@@ -13,9 +13,12 @@ import {
 } from "../ui/hover-card";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/contexts/AuthProfileContext";
 
 type Conversation = {
   topic: string;
+  difficulty: string;
+  language: string;
   messages: Message[];
 };
 
@@ -40,6 +43,7 @@ export default function Conversation({ id }: { id: string }) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const { profile } = useAuth();
 
   useEffect(() => {
     let running = false;
@@ -47,6 +51,7 @@ export default function Conversation({ id }: { id: string }) {
       if (!running) {
         running = true;
         const conversation = await getConversation(id);
+        console.log("conversation", conversation);
         setConversation(conversation);
       }
     })();
@@ -105,7 +110,11 @@ export default function Conversation({ id }: { id: string }) {
     // Clear input optimistically
     setInput("");
 
-    const body = { topic: conversation.topic, message: prevInput };
+    const body = {
+      theme: conversation.topic,
+      username: profile?.username ?? "",
+      history: conversation.messages,
+    };
 
     try {
       // TODO: send message to AI, get reply (conversation agent) and get remarks on reply (teacher agent)
@@ -206,7 +215,7 @@ function MessageBubble({ message }: { message: Message }) {
 function AssistantMessageBubble({ message }: { message: AssistantMessage }) {
   return (
     <div className="text-left">
-      <div className="inline-block py-2 px-4 rounded-2xl bg-muted">
+      <div className="inline-block py-2 px-4 rounded-2xl bg-muted whitespace-pre-wrap">
         {message.content}
       </div>
     </div>
@@ -233,18 +242,26 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
 
 async function getConversation(id: string): Promise<Conversation> {
   const supabase = createClient();
-  const { data: conversations, error } = await supabase
+  const { data: messages, error } = await supabase
     .from("messages")
     .select("id, role, content")
     .eq("conversation_id", id)
     .order("created_at", { ascending: false });
   if (error) throw error;
+  const { data: conversation, error: e } = await supabase
+    .from("conversations")
+    .select("title, difficulty, language")
+    .eq("id", id)
+    .single();
+  if (e) throw e;
   return {
-    topic: "Haggling at a market",
-    messages: conversations.map((conversation) => ({
-      id: conversation.id,
-      role: conversation.role,
-      content: conversation.content,
+    topic: conversation.title,
+    difficulty: conversation.difficulty,
+    language: conversation.language,
+    messages: messages.map((message) => ({
+      id: message.id,
+      role: message.role,
+      content: message.content,
       pending: false,
     })),
   };

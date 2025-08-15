@@ -2,17 +2,11 @@ import { useAuth } from "@/contexts/AuthProfileContext";
 import { createClient } from "@/lib/supabase/client";
 import { useCallback, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Theme } from "@/lib/types";
 import { Loader2, Plus } from "lucide-react";
 import { Separator } from "@radix-ui/react-separator";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function NewConversation({
   themes,
@@ -39,7 +33,7 @@ export default function NewConversation({
 
     const { data: theme } = await supabase
       .from("themes")
-      .select("id, title, language, starter_prompt")
+      .select("id, title, language, starter_prompt, difficulty")
       .eq("id", themeId)
       .single();
     if (!theme) {
@@ -69,10 +63,11 @@ export default function NewConversation({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt: theme.starter_prompt }),
+        body: JSON.stringify({ theme: theme, username: profile.username }),
       });
       const data = await res.json();
-      const starting_text = data.text;
+      const starting_text =
+        data.native + "\n" + data.romanization + "\n" + data.english;
       console.log("text generted");
 
       const { error: msgErr } = await supabase.from("messages").insert({
@@ -96,7 +91,7 @@ export default function NewConversation({
   }, [themeId, supabase, onCreated, profile]);
 
   return (
-    <div className="flex h-full items-center justify-center p-6">
+    <div className="flex h-auto justify-center p-6">
       <Card className="w-full max-w-xl">
         <CardHeader>
           <CardTitle>Start a new chat</CardTitle>
@@ -108,22 +103,49 @@ export default function NewConversation({
             </div>
           ) : (
             <>
-              <div className="text-sm text-muted-foreground">
-                Choose a theme to generate a context-aware opener. You can
-                change topics anytime.
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>
+                    Choose a theme to generate a context-aware opener. You can
+                    change topics anytime.
+                  </span>
+                </div>
+              </CardHeader>
+              <div
+                role="radiogroup"
+                aria-label="Theme"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+              >
+                {themes.map((t) => {
+                  const active = t.id === themeId;
+                  return (
+                    <button
+                      key={t.id}
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setThemeId(t.id)}
+                      className={cn(
+                        "group relative w-full rounded-2xl border bg-card p-4 text-left transition-all",
+                        "hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring/40",
+                        active
+                          ? "border-primary/60 ring-1 ring-primary/40 shadow-sm"
+                          : "border-border",
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium leading-none">
+                              {t.title}
+                            </h4>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity opacity-0 group-hover:opacity-100 bg-gradient-to-t from-primary/5 to-transparent" />
+                    </button>
+                  );
+                })}
               </div>
-              <Select onValueChange={(v) => setThemeId(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {themes.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Separator />
               <div className="flex items-center justify-end gap-3">
                 <Button

@@ -46,7 +46,6 @@ export default function ConversationSidebar({
         className,
       )}
     >
-      {/* Header */}
       <div className="p-3">
         <div className="flex items-center gap-2">
           <div className="text-lg font-semibold">Chats</div>
@@ -99,15 +98,6 @@ export default function ConversationSidebar({
           ))}
         </ul>
       </ScrollArea>
-
-      {/* Footer */}
-      <Separator />
-      <div className="p-3 text-xs text-muted-foreground">
-        <div className="leading-tight">
-          Tip: Press <kbd className="rounded bg-muted px-1">/</kbd> to focus
-          search
-        </div>
-      </div>
     </aside>
   );
 }
@@ -187,7 +177,7 @@ function ItemButton({
         </div>
       </div>
       <button
-        className="ml-1 hidden rounded-md p-1 text-muted-foreground hover:bg-muted group-hover:block"
+        className="ml-1 rounded-md p-1 text-muted-foreground hover:bg-muted opacity-0 transition-opacity group-hover:opacity-100"
         onClick={(e) => {
           e.stopPropagation();
           onDelete?.();

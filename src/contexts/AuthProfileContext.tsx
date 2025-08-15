@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setProfile(data ?? null);
-      console.log("loadProfile", data);
+      console.log("loadProfile", data, loading);
     },
     [supabase],
   );

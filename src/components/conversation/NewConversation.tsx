@@ -39,14 +39,13 @@ export default function NewConversation({
 
     const { data: theme } = await supabase
       .from("themes")
-      .select("id, title, language")
+      .select("id, title, language, starter_prompt")
       .eq("id", themeId)
       .single();
     if (!theme) {
       setCreating(false);
       return;
     }
-
     const { data: conv, error: convErr } = await supabase
       .from("conversations")
       .insert({
@@ -57,19 +56,40 @@ export default function NewConversation({
       .select("id")
       .single();
 
+    console.log("conversation created");
+
     if (convErr || !conv?.id) {
       setCreating(false);
       return;
     }
 
-    // 2) Ask server to generate the opening assistant message
-    // Implement this endpoint to call SEA-LION and insert a messages row (role='assistant')
-    // and update conversations.opening_message_id if you like.
-    await fetch("/api/opener", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId: conv.id, themeId: theme.id }),
-    }).catch(() => {});
+    try {
+      const res = await fetch(`/api/theme`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: theme.starter_prompt }),
+      });
+      const data = await res.json();
+      const starting_text = data.text;
+      console.log("text generted");
+
+      const { error: msgErr } = await supabase.from("messages").insert({
+        conversation_id: conv.id,
+        role: "assistant",
+        content: starting_text,
+        user_id: profile.id,
+      });
+      console.log("message saved");
+      if (msgErr) {
+        setCreating(false);
+        console.error("error saving message", msgErr);
+        return;
+      }
+    } catch (err) {
+      console.error("error generating text", err);
+    }
 
     setCreating(false);
     onCreated(conv.id);

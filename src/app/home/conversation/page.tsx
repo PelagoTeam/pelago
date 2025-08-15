@@ -50,7 +50,6 @@ export default function ConversationPage() {
         .order("title");
 
       console.log("themes", data);
-      console.log("error", error);
       if (!error && data) setThemes(data);
       setLoadingThemes(false);
     };

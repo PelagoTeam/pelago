@@ -12,6 +12,7 @@ import {
   HoverCardTrigger,
 } from "../ui/hover-card";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 type Conversation = {
   topic: string;
@@ -231,17 +232,20 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
 }
 
 async function getConversation(id: string): Promise<Conversation> {
-  // TODO: get conversation by id from db
+  const supabase = createClient();
+  const { data: conversations, error } = await supabase
+    .from("messages")
+    .select("id, role, content")
+    .eq("conversation_id", id)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
   return {
     topic: "Haggling at a market",
-    messages: [
-      {
-        id: "ea88275c-8a9f-4c90-8cfe-c1463adfb88c",
-        role: "assistant",
-        pending: false,
-        content:
-          "Sawasdee! You're at a Bangkok market. Try greeting the vendor and ask for the price.",
-      },
-    ],
+    messages: conversations.map((conversation) => ({
+      id: conversation.id,
+      role: conversation.role,
+      content: conversation.content,
+      pending: false,
+    })),
   };
 }

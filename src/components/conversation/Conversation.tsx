@@ -215,7 +215,7 @@ function MessageBubble({ message }: { message: Message }) {
 function AssistantMessageBubble({ message }: { message: AssistantMessage }) {
   return (
     <div className="text-left">
-      <div className="inline-block py-2 px-4 rounded-2xl bg-muted whitespace-pre-wrap">
+      <div className="inline-block py-2 px-4 whitespace-pre-wrap rounded-2xl bg-muted">
         {message.content}
       </div>
     </div>

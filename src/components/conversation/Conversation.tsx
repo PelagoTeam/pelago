@@ -91,19 +91,9 @@ export default function Conversation({ id }: { id: string }) {
       content: input,
       remarks: "...", // placeholder while waiting for real remarks
     };
-    const optimisticAssistantMsg: Message = {
-      id: assistantMsgId,
-      role: "assistant",
-      pending: true,
-      content: "...", // placeholder while waiting for real reply
-    };
     const optimisticConversation: Conversation = {
       ...conversation,
-      messages: [
-        ...conversation.messages,
-        optimisticUserMsg,
-        optimisticAssistantMsg,
-      ],
+      messages: [...conversation.messages, optimisticUserMsg],
     };
 
     // set state optimistically
@@ -132,15 +122,22 @@ export default function Conversation({ id }: { id: string }) {
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
 
-      optimisticAssistantMsg.content =
-        data.native + "\n" + data.romanization + "\n" + data.english;
-      optimisticAssistantMsg.pending = false;
+      const newConversation: Conversation = {
+        ...optimisticConversation,
+        messages: [
+          ...optimisticConversation.messages,
+          {
+            id: assistantMsgId,
+            role: "assistant",
+            pending: false,
+            content:
+              data.native + "\n" + data.romanization + "\n" + data.english,
+          },
+        ],
+      };
 
-      // On success: replace the optimistic assistant message with the real reply.
       setConversation((conversation) =>
-        conversation
-          ? JSON.parse(JSON.stringify(optimisticConversation))
-          : conversation,
+        conversation ? newConversation : conversation,
       );
     } catch (e) {
       console.error("Send failed:", e);
@@ -171,6 +168,16 @@ export default function Conversation({ id }: { id: string }) {
           {conversation.messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
+          {loading && (
+            <AssistantMessageBubble
+              message={{
+                id: "XXX",
+                role: "assistant",
+                content: "...",
+                pending: true,
+              }}
+            />
+          )}
         </div>
         <Separator />
         <div className="flex gap-3">

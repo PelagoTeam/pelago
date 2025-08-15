@@ -109,7 +109,6 @@ export default function Conversation({ id }: { id: string }) {
 
     // Clear input optimistically
     setInput("");
-
     const body = {
       theme: conversation.topic,
       username: profile?.username ?? "",
@@ -142,7 +141,8 @@ export default function Conversation({ id }: { id: string }) {
               return {
                 ...am,
                 pending: false,
-                content: data.reply,
+                content:
+                  data.native + "\n" + data.romanization + "\n" + data.english,
               };
             }
             if (m.id === userMsgId) {

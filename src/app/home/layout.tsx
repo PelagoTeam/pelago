@@ -111,7 +111,7 @@ export default function HomeLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-screen">
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-screen-xl px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6 justify-between w-full">

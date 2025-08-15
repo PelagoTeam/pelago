@@ -47,3 +47,19 @@ export type Stages = {
   stage_number: number;
   course_id: string;
 };
+
+// TYPES ----------------------------------------------------------------------
+
+export type ConversationType = {
+  id: string;
+  title: string;
+};
+
+export type Theme = {
+  id: string;
+  title: string;
+  language: string;
+  starter_prompt: string;
+  culture_tips?: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+};

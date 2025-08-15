@@ -1,12 +1,14 @@
 import { z } from "zod";
-import { generateText, generateObject } from "ai";
+import { generateObject } from "ai";
 import { NextRequest, NextResponse } from "next/server";
 import { model } from "@/lib/sealion";
 
 export const runtime = "edge"; // switch to "nodejs" if you use Node-only tools
 
 export async function POST(req: NextRequest) {
-  const { theme, username, history } = await req.json();
+  const reqJson = await req.json();
+  console.log("req", reqJson);
+  const { theme, username, history } = reqJson;
 
   const [response, remarks] = await Promise.all([
     generateResponse({
@@ -48,41 +50,28 @@ async function generateResponse({
   username?: string;
   history: { role: "user" | "assistant"; content: string }[];
 }) {
-  const recent = history
-    .slice(-6)
-    .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
-    .join("\n");
-
   const prompt = `
 You are a friendly ${language} conversation partner in a short role-play.
 Theme: ${title}. User: ${username ?? "Learner"}. Level: ${difficulty}.
 
 Continue naturally in ${language}, no teaching tips or meta. End with ONE inviting question.
-
-Return ONLY valid JSON:
-{
-  "native": (...)
-  "romanization": (...),
-  "english": (...)
-}
-
-Conversation so far:
-${recent}
 `;
 
-  const { text } = await generateText({
+  const { object } = await generateObject({
     model: model,
-    prompt,
+    system: prompt,
+    messages: history,
+    mode: "json",
+    schema: z.object({
+      native: z.string(),
+      romanization: z.string(),
+      english: z.string(),
+    }),
   });
 
-  const cleaned = JSON.parse(text);
-  console.log("generateResponse:", cleaned);
+  console.log("generateResponse:", object);
 
-  return {
-    native: cleaned["native"],
-    romanization: cleaned["romanization"],
-    english: cleaned["english"],
-  };
+  return object;
 }
 
 async function generateRemarks({
@@ -107,26 +96,22 @@ You are a friendly ${language} language teacher teaching ${language} at ${diffic
 Your student is in a short role-play session with a partner.
 The theme of the role-play is "${title}".
 Your task is to give remarks on your student's response to their partner.
-Give useful advice to help your student improve.
-
-Return ONLY valid JSON:
-{
-  "remarks": (...)
-}
+Give useful advice to help your student improve, keep it to 50 words maximum.
 
 Conversation so far:
 ${recent}
 `;
 
-  const { text } = await generateText({
+  const { object } = await generateObject({
     model: model,
-    prompt,
+    prompt: prompt,
+    mode: "json",
+    schema: z.object({
+      remarks: z.string(),
+    }),
   });
 
-  const cleaned = JSON.parse(text);
-  console.log("generateRemarks:", cleaned);
+  console.log("generateResponse:", object);
 
-  return {
-    remarks: cleaned["remarks"],
-  };
+  return object;
 }

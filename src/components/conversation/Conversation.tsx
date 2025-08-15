@@ -83,7 +83,7 @@ export default function Conversation({ id }: { id: string }) {
     const userMsgId = "20f97e2f-bf29-4bbb-accb-9001ebdf8620";
     const assistantMsgId = "7325ab2e-1272-4503-bf12-ed206f925f3d";
 
-    // Optimistic messages
+    // Optimistic state
     const optimisticUserMsg: Message = {
       id: userMsgId,
       role: "user",
@@ -97,30 +97,30 @@ export default function Conversation({ id }: { id: string }) {
       pending: true,
       content: "...", // placeholder while waiting for real reply
     };
-
-    // 1) Optimistically add messages to conversation
-    setConversation((c) => {
-      if (!c) return c;
-      return {
-        ...c,
-        messages: [...c.messages, optimisticUserMsg, optimisticAssistantMsg],
-      };
-    });
-
-    // Clear input optimistically
-    setInput("");
-    const body = {
-      theme: conversation.topic,
-      username: profile?.username ?? "",
-      history: conversation.messages,
+    const optimisticConversation: Conversation = {
+      ...conversation,
+      messages: [
+        ...conversation.messages,
+        optimisticUserMsg,
+        optimisticAssistantMsg,
+      ],
     };
 
+    // set state optimistically
+    setConversation((conversation) =>
+      conversation ? optimisticConversation : conversation,
+    );
+    setInput("");
+
     try {
-      // TODO: send message to AI, get reply (conversation agent) and get remarks on reply (teacher agent)
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          theme: optimisticConversation.topic,
+          username: profile?.username,
+          history: optimisticConversation.messages,
+        }),
       });
 
       if (!res.ok) {
@@ -129,34 +129,19 @@ export default function Conversation({ id }: { id: string }) {
 
       const data = await res.json();
 
-      // 2) On success: replace the optimistic assistant message with the real reply.
-      // Optionally attach remarks to the user message if returned by the server.
-      setConversation((c) => {
-        if (!c) return c;
-        return {
-          ...c,
-          messages: c.messages.map((m) => {
-            if (m.id === assistantMsgId) {
-              const am = m as AssistantMessage;
-              return {
-                ...am,
-                pending: false,
-                content:
-                  data.native + "\n" + data.romanization + "\n" + data.english,
-              };
-            }
-            if (m.id === userMsgId) {
-              const um = m as UserMessage;
-              return {
-                ...um,
-                pending: false,
-                remarks: data.remarks,
-              };
-            }
-            return m;
-          }),
-        };
-      });
+      optimisticUserMsg.remarks = data.remarks;
+      optimisticUserMsg.pending = false;
+
+      optimisticAssistantMsg.content =
+        data.native + "\n" + data.romanization + "\n" + data.english;
+      optimisticAssistantMsg.pending = false;
+
+      // On success: replace the optimistic assistant message with the real reply.
+      setConversation((conversation) =>
+        conversation
+          ? JSON.parse(JSON.stringify(optimisticConversation))
+          : conversation,
+      );
     } catch (e) {
       console.error("Send failed:", e);
 

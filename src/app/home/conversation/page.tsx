@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthProfileContext";
 import { ConversationType, Theme } from "@/lib/types";
 import NewConversation from "@/components/conversation/NewConversation";
 import ConversationSidebar from "@/components/conversation/ConversationSidebar";
-import ConversationLoading from "@/components/conversation/ConversationSkeleton";
 
 export default function ConversationPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -18,16 +17,12 @@ export default function ConversationPage() {
 
   const [conversations, setConversations] = useState<ConversationType[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
-  const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingThemes, setLoadingThemes] = useState(true);
   const { profile } = useAuth();
 
   const loadConversations = useCallback(async () => {
-    setLoadingConversations(true);
-
     if (!profile) {
       setConversations([]);
-      setLoadingConversations(false);
       return;
     }
 
@@ -39,7 +34,6 @@ export default function ConversationPage() {
     if (!error && data) {
       setConversations(data);
     }
-    setLoadingConversations(true);
   }, [supabase, profile]);
 
   useEffect(() => {
@@ -91,24 +85,17 @@ export default function ConversationPage() {
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
       />
-
-      {loadingConversations ? (
-        <div className="flex flex-1 justify-center items-center">
-          Loading...
-        </div>
-      ) : (
-        <div className="flex-1 min-h-0">
-          {conversationId ? (
-            <Conversation id={conversationId} />
-          ) : (
-            <NewConversation
-              themes={themes}
-              loading={loadingThemes}
-              onCreated={handleSelectConversation}
-            />
-          )}
-        </div>
-      )}
+      <div className="flex-1 min-h-0">
+        {conversationId ? (
+          <Conversation id={conversationId} />
+        ) : (
+          <NewConversation
+            themes={themes}
+            loading={loadingThemes}
+            onCreated={handleSelectConversation}
+          />
+        )}
+      </div>
     </div>
   );
 }

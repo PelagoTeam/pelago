@@ -10,11 +10,11 @@ import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
-} from "../ui/hover-card";
+} from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
-import ConversationLoading from "./ConversationSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Conversation = {
   topic: string;
@@ -54,6 +54,7 @@ export default function Conversation({ id }: { id: string }) {
       if (!running && profile) {
         running = true;
         const conversation = await getConversation(id, profile.id);
+        console.log("conversation", conversation);
         setConversation(conversation);
       }
     })();
@@ -69,8 +70,7 @@ export default function Conversation({ id }: { id: string }) {
   }, [conversation?.messages.length, loading]);
 
   if (!conversation) {
-    // TODO: loading state
-    return <ConversationLoading />;
+    return <Skeleton className="w-full h-full bg-secondary" />;
   }
 
   async function send() {
@@ -87,13 +87,9 @@ export default function Conversation({ id }: { id: string }) {
 
     setLoading(true);
 
-    // Hardcoded UUIDs
-    const userMsgId = "20f97e2f-bf29-4bbb-accb-9001ebdf8620";
-    const assistantMsgId = "7325ab2e-1272-4503-bf12-ed206f925f3d";
-
     // Optimistic state
     const optimisticUserMsg: Message = {
-      id: userMsgId,
+      id: "PLACEHOLDER_ID",
       role: "user",
       pending: true,
       content: input,
@@ -134,14 +130,14 @@ export default function Conversation({ id }: { id: string }) {
 
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
-      optimisticUserMsg.id = data.message_id.user_message_id ?? userMsgId;
+      optimisticUserMsg.id = data.messageIds.user;
 
       const newConversation: Conversation = {
         ...optimisticConversation,
         messages: [
           ...optimisticConversation.messages,
           {
-            id: data.message_id.assistant_message_id ?? assistantMsgId,
+            id: data.messageIds.assistant,
             role: "assistant",
             pending: false,
             content:
@@ -168,7 +164,7 @@ export default function Conversation({ id }: { id: string }) {
   }
 
   return (
-    <Card className="shadow-md">
+    <Card className="flex flex-col w-full h-full">
       <CardHeader>
         <CardTitle>
           Conversation •{" "}
@@ -177,9 +173,10 @@ export default function Conversation({ id }: { id: string }) {
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+
+      <CardContent className="flex flex-col flex-1 gap-3 min-h-0">
         <div
-          className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]"
+          className="flex overflow-y-scroll flex-col flex-1 gap-3 min-h-0 no-scrollbar"
           ref={scrollerRef}
         >
           {conversation.messages.map((message) => (
@@ -196,8 +193,11 @@ export default function Conversation({ id }: { id: string }) {
             />
           )}
         </div>
+
         <Separator />
-        {error && <p className="text-red-600 mb-4">{error}</p>}
+
+        {error && <p className="text-red-600">{error}</p>}
+
         <div className="flex gap-3">
           <Textarea
             value={input}

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("messages")
     .upsert(rows)
-    .select("id");
+    .select("id, role");
 
   const messageIds: { user: any; assistant: any } = {
     user: null,

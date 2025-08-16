@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import MCQQuiz, { MCQData } from "@/components/Quiz/MCQQuiz";
 import ComposeQuiz, { ComposeData } from "@/components/Quiz/ComposeQuiz";
+import { Button } from "@/components/ui/button";
 
 type QuestionRow = {
   question_id: string;
@@ -268,6 +269,7 @@ export default function QuizPage() {
   return (
     <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
+      <Button onClick={() => router.back()}>Back</Button>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Quiz</h1>

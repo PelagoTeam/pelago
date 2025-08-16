@@ -39,7 +39,7 @@ export default function HomePage() {
           .eq("course_id", profile.current_course)
           .eq("stage_number", progress.stage)
           .single();
-        router.push(`/home?stage=${stage?.id}`);
+        router.replace(`/home?stage=${stage?.id}`);
       }
     };
     checkStageId();

@@ -15,6 +15,7 @@ import {
   HoverCardContent,
 } from "@/components/ui/hover-card";
 import { Check, Loader2 } from "lucide-react";
+import CoursePickerPage from "@/components/SignUp/RegisterCourse";
 
 function NavItem({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -84,6 +85,8 @@ export default function HomeLayout({
     fetchIcon();
   }, [profile, supabase]);
 
+  if (!profile && user) return <CoursePickerPage />;
+
   const initials = (
     profile?.username?.[0] ??
     user?.email?.[0] ??
@@ -107,6 +110,7 @@ export default function HomeLayout({
       console.error("[Course switch] error:", e);
     } finally {
       setSwitchingId(null);
+      router.replace("/home");
     }
   }
 

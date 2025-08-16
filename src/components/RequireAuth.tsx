@@ -17,12 +17,6 @@ export default function RequireAuth({
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
-  if (loading)
-    return (
-      <div className="p-6 text-center text-sm text-muted-foreground">
-        Checking session…
-      </div>
-    );
   if (!user) return null;
   return <>{children}</>;
 }

@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 /**
  * Sign-up page that mirrors the login page styling (split layout, soft glows,
@@ -15,8 +15,6 @@ import { Eye, EyeOff, UserPlus } from "lucide-react";
  */
 export default function SignUpPage() {
   const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,8 +25,7 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const next = searchParams?.get("next") || "/home";
+  const router = useRouter();
 
   function normalizeAuthError(e: unknown) {
     try {
@@ -64,11 +61,7 @@ export default function SignUpPage() {
         options: { data: { full_name: name } },
       });
       if (error) throw error;
-
-      // Most setups require email confirmation; don't redirect immediately.
-      setNotice(
-        "Check your email for a verification link to complete sign up."
-      );
+      router.replace("/home");
     } catch (err) {
       setError(normalizeAuthError(err));
     } finally {
@@ -95,7 +88,7 @@ export default function SignUpPage() {
           </h1>
           <ul className="mt-6 space-y-3 text-muted-foreground list-disc pl-6 marker:text-primary">
             <li>Lessons that adapt to you</li>
-            <li>Real-world phrases you’ll use</li>
+            <li>Real-world phrases you{"'"}will use</li>
             <li>Progress that stays in sync</li>
           </ul>
         </section>

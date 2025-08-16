@@ -108,6 +108,24 @@ export default function NewConversation({
                     </button>
                   );
                 })}
+                <button
+                  key={"new"}
+                  role="radio"
+                  disabled
+                  aria-checked={false}
+                  className="group relative w-full rounded-2xl border bg-card p-4 text-left transition-all opacity-50 focus:outline-none focus:ring-2 focus:ring-ring/40"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium leading-none">
+                          Coming Soon
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pointer-events-none absolute inset-0 rounded-2xl transition-opacity opacity-0 group-hover:opacity-100 bg-gradient-to-t from-primary/5 to-transparent" />
+                </button>
               </div>
               <Separator />
               <div className="flex items-center justify-end gap-3">

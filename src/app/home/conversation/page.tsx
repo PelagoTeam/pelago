@@ -84,24 +84,31 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex gap-3 h-full">
       <ConversationSidebar
         conversations={conversations}
         onSelect={handleSelectConversation}
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}
       />
-      <div className="flex-1 overflow-hidden">
-        {conversationId ? (
-          <Conversation id={conversationId} />
-        ) : (
-          <NewConversation
-            themes={themes}
-            loading={loadingThemes}
-            onCreated={handleSelectConversation}
-          />
-        )}
-      </div>
+
+      {loadingConversations ? (
+        <div className="flex flex-1 justify-center items-center">
+          Loading...
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0">
+          {conversationId ? (
+            <Conversation id={conversationId} />
+          ) : (
+            <NewConversation
+              themes={themes}
+              loading={loadingThemes}
+              onCreated={handleSelectConversation}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

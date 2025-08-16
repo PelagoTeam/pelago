@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useEffect, useMemo, useState } from "react";
 import ZigZagRoadmap from "@/components/Quiz/ZigzagRoadmap";
@@ -13,31 +13,43 @@ import { Badge } from "@/components/ui/badge";
 import ComingSoon from "@/components/Quiz/ComingSoon";
 
 export default function HomePage() {
-  const { profile, user, loading: authLoading } = useAuth();
+  const { profile } = useAuth();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Module[]>([]);
-  const [course_id, setCourseId] = useState<string | null>(null);
   const [userProgress, setUserProgress] = useState({ module: 0, stage: 0 });
   const [stages, setStages] = useState<Stages[]>([]);
-
   const router = useRouter();
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-  }, [authLoading, user, profile, router]);
+  const search = useSearchParams();
+  const stage_id = search.get("stage");
 
   useEffect(() => {
-    if (!profile) return;
+    const checkStageId = async () => {
+      if (!stage_id && profile) {
+        const { data: uc } = await supabase
+          .from("user_courses")
+          .select("stage")
+          .eq("course_id", profile.current_course)
+          .single();
+        const progress = uc ?? { stage: 0 };
+        const { data: stage } = await supabase
+          .from("stages")
+          .select("id")
+          .eq("course_id", profile.current_course)
+          .eq("stage_number", progress.stage)
+          .single();
+        router.push(`/home?stage=${stage?.id}`);
+      }
+    };
+    checkStageId();
+  }, [stage_id, router, profile, supabase]);
 
+  useEffect(() => {
+    if (!profile || !stage_id) return;
     (async () => {
       setLoading(true);
       const courseId = profile.current_course;
-      setCourseId(courseId);
       const { data: uc } = await supabase
         .from("user_courses")
         .select("module, stage")
@@ -64,29 +76,44 @@ export default function HomePage() {
         .from("modules")
         .select("module_id, order, course_id")
         .eq("course_id", courseId)
-        .eq(
-          "stage_id",
-          stages?.filter((s) => s.stage_number === progress.stage)[0]?.id,
-        );
-
+        .eq("stage_id", stage_id);
       if (qErr) {
         console.error("[Roadmap] questions error:", qErr);
         setModules([]);
         setLoading(false);
         return;
       }
-
-      setModules(qs ?? []);
+      const modules =
+        qs.map((q) => {
+          return {
+            module_id: q.module_id,
+            order: q.order,
+            stage_number:
+              stages.find((s) => s.id === stage_id)?.stage_number ?? 0,
+            course_id: q.course_id,
+          };
+        }) ?? [];
+      setModules(modules);
       setLoading(false);
     })();
-  }, [profile, supabase]);
+  }, [profile, supabase, stage_id]);
 
-  if (!course_id) return <p className="px-4">No course selected.</p>;
-  if (loading) return <p className="px-4 text-muted-foreground">Loading…</p>;
+  if (loading) {
+    return (
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="mt-3 text-sm text-muted-foreground animate-pulse">
+            Fetching your roadmap...
+          </p>
+        </div>
+      </div>
+    );
+  }
   if (stages.length === 0) return <ComingSoon />;
 
   const totalModules = modules.length;
-  const idx = Math.max(0, Math.min(userProgress.stage, stages.length - 1));
+  const idx = stages.findIndex((s) => s.id === stage_id);
   const stage = stages[idx];
 
   return (
@@ -118,7 +145,6 @@ export default function HomePage() {
             </h3>
           </div>
 
-          {/* CTA */}
           <Button
             onClick={() => router.push("/home/stages")}
             size="sm"
@@ -131,7 +157,7 @@ export default function HomePage() {
       </div>
       <ZigZagRoadmap
         modules={modules}
-        progress={userProgress.module}
+        progress={userProgress}
         totalModules={totalModules}
       />
     </div>

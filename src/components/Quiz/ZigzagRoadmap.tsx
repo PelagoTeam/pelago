@@ -7,44 +7,70 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Check, Lock, Star } from "lucide-react";
 
-type Module = { module_id: string; title?: string };
-
-type Props = {
-  modules: Module[];
-  progress: number;
-  totalModules: number;
+type Module = {
+  module_id: string;
+  title?: string;
+  stage_number: number;
+  order: number;
 };
 
 export default function ZigZagRoadmap({
   modules,
   progress,
   totalModules,
-}: Props) {
+}: {
+  modules: Module[];
+  progress: { module: number; stage: number };
+  totalModules: number;
+}) {
   const router = useRouter();
 
-  // layout constants (tweak to taste)
   const NODE = 72; // px circle diameter
   const STEP_Y = 135; // vertical distance between rows (px)
   const OFFSET_X = 120; // left/right horizontal offset from center (px)
   const LINE_THICK = 10; // connector thickness (px)
 
-  // compute positions in a centered coordinate system (x in px from center)
-  const nodes = useMemo(() => {
-    return modules.map((m, i) => {
-      const y = i * STEP_Y;
-      let x = 0;
-      if (i > 0) x = i % 2 === 1 ? +OFFSET_X : -OFFSET_X; // R, L, R, L…
-      return { i, m, x, y };
-    });
-  }, [modules]);
+  const sorted = useMemo(
+    () =>
+      [...modules].sort((a, b) =>
+        a.stage_number === b.stage_number
+          ? a.order - b.order
+          : a.stage_number - b.stage_number,
+      ),
+    [modules],
+  );
 
-  const containerHeight = (modules.length - 1) * STEP_Y + NODE;
-
-  const stateFor = (idx: number): "done" | "current" | "locked" => {
-    if (idx < progress) return "done";
-    if (idx === progress) return "current";
+  type State = "done" | "current" | "locked";
+  const stateForModule = (m: Module): State => {
+    if (m.stage_number < progress.stage) return "done";
+    if (m.stage_number > progress.stage) return "locked";
+    // same stage
+    if (m.order < progress.module) return "done";
+    if (m.order === progress.module) return "current";
     return "locked";
   };
+
+  // 3) Stage-aware edge states (based on PREVIOUS node in the path)
+  const isEdgeDone = (prev: Module) => {
+    if (prev.stage_number < progress.stage) return true;
+    if (prev.stage_number > progress.stage) return false;
+    return prev.order < progress.module;
+  };
+  const isEdgeCurrent = (prev: Module) => {
+    if (prev.stage_number !== progress.stage) return false;
+    return prev.order === progress.module;
+  };
+
+  // 4) Compute zigzag node positions (centered)
+  const nodes = useMemo(() => {
+    return sorted.map((m, i) => {
+      const y = i * STEP_Y;
+      const x = i === 0 ? 0 : i % 2 === 1 ? +OFFSET_X : -OFFSET_X;
+      return { i, m, x, y };
+    });
+  }, [sorted]);
+
+  const containerHeight = (sorted.length - 1) * STEP_Y + NODE;
 
   const goto = (moduleId: string, disabled: boolean) => {
     if (!disabled) router.push(`/home/quiz?module=${moduleId}`);
@@ -56,10 +82,10 @@ export default function ZigZagRoadmap({
         <h2 className="text-xl font-semibold">Course Roadmap</h2>
         <div className="flex items-center gap-3">
           <Badge variant="secondary">
-            {Math.min(progress, totalModules)}/{totalModules} completed
+            {Math.min(progress.module, totalModules)}/{totalModules} completed
           </Badge>
           <Progress
-            value={(progress / Math.max(1, totalModules)) * 100}
+            value={(progress.module / Math.max(1, totalModules)) * 100}
             className="w-40"
           />
         </div>
@@ -78,8 +104,8 @@ export default function ZigZagRoadmap({
           const cx = (n.x + prev.x) / 2;
           const cy = (n.y + prev.y) / 2;
 
-          const doneEdge = prev.i < progress;
-          const currentEdge = prev.i === progress;
+          const doneEdge = isEdgeDone(prev.m);
+          const currentEdge = isEdgeCurrent(prev.m);
 
           return (
             <div
@@ -112,7 +138,7 @@ export default function ZigZagRoadmap({
         })}
 
         {nodes.map(({ i, m, x, y }) => {
-          const st = stateFor(i);
+          const st = stateForModule(m);
           const clickable = st !== "locked";
 
           return (
@@ -128,14 +154,17 @@ export default function ZigZagRoadmap({
                 st === "current" &&
                   "bg-accent text-accent-foreground border-accent/40 focus-visible:ring-accent/30 cursor-pointer",
                 st === "locked" &&
-                  "bg-muted text-muted-foreground border-border cursor-not-allowed"
+                  "bg-muted text-muted-foreground border-border cursor-not-allowed",
               )}
               style={{
                 left: `calc(50% + ${x}px)`,
                 top: y,
                 transform: `translate(-50%, 0)`,
               }}
-              aria-label={m.title ?? `Module ${i + 1}`}
+              aria-label={
+                m.title ?? `Stage ${m.stage_number} • Module ${m.order}`
+              }
+              title={m.title ?? `Stage ${m.stage_number} • Module ${m.order}`}
             >
               {st === "current" && (
                 <span className="absolute -top-10 rounded-md bg-secondary px-3 py-2 text-xs font-semibold text-secondary-foreground border-2 border-primary/40">

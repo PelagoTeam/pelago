@@ -34,23 +34,6 @@ type ComposeQuestion = {
 
 type Question = MCQQuestion | ComposeQuestion;
 
-function isMCQData(x: any): x is MCQData {
-  return (
-    x &&
-    typeof x === "object" &&
-    Array.isArray(x.options) &&
-    typeof x.answer === "string"
-  );
-}
-function isComposeData(x: any): x is ComposeData {
-  return (
-    x &&
-    typeof x === "object" &&
-    Array.isArray(x.tokens) &&
-    Array.isArray(x.answer_order)
-  );
-}
-
 export default function QuizPage() {
   const router = useRouter();
   const search = useSearchParams();
@@ -94,7 +77,7 @@ export default function QuizPage() {
         const normalized: Question[] = (data ?? [])
           .map((r: QuestionRow) => {
             const prompt = (r.prompt ?? "").toString();
-            if (r.type === "mcq" && isMCQData(r.payload)) {
+            if (r.type === "mcq") {
               return {
                 question_id: r.question_id,
                 position: r.position,
@@ -103,7 +86,7 @@ export default function QuizPage() {
                 payload: r.payload,
               };
             }
-            if (r.type === "compose" && isComposeData(r.payload)) {
+            if (r.type === "compose") {
               return {
                 question_id: r.question_id,
                 position: r.position,

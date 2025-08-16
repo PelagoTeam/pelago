@@ -111,10 +111,10 @@ export default function HomeLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background w-screen">
+    <div className="flex flex-col h-full">
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto max-w-screen-xl px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-6 justify-between w-full">
+        <div className="container flex justify-between items-center px-4 mx-auto max-w-screen-xl h-16">
+          <div className="flex gap-6 justify-between items-center w-full">
             <h1
               className={cn(
                 "text-xl font-semibold tracking-tight",
@@ -126,11 +126,11 @@ export default function HomeLayout({
 
             {/* Desktop nav */}
 
-            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-2 py-1 ring-1 ring-primary/20">
+            <div className="flex gap-2 items-center py-1 px-2 rounded-xl ring-1 bg-primary/10 ring-primary/20">
               {user && !loading && currentCourse ? (
                 <HoverCard openDelay={120} closeDelay={80}>
                   <HoverCardTrigger asChild>
-                    <Avatar className="h-9 w-9 ring-1 ring-border cursor-pointer">
+                    <Avatar className="w-9 h-9 ring-1 cursor-pointer ring-border">
                       <AvatarImage
                         src={currentCourse.icon_url}
                         alt={currentCourse.language}
@@ -143,7 +143,7 @@ export default function HomeLayout({
                   <HoverCardContent
                     align="start"
                     side="bottom"
-                    className="w-80 p-3 border bg-card"
+                    className="p-3 w-80 border bg-card"
                   >
                     <div className="mb-2 text-xs font-medium text-muted-foreground">
                       Your courses
@@ -184,13 +184,13 @@ export default function HomeLayout({
                               {c.language}
                             </span>
                             {isActive && !isBusy && (
-                              <span className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-primary text-primary-foreground">
-                                <Check className="h-3 w-3" />
+                              <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
+                                <Check className="w-3 h-3" />
                               </span>
                             )}
                             {isBusy && (
-                              <span className="absolute -top-2 -right-2 grid h-5 w-5 place-items-center rounded-full bg-secondary">
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                              <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-secondary">
+                                <Loader2 className="w-3 h-3 animate-spin" />
                               </span>
                             )}
                           </button>
@@ -200,23 +200,23 @@ export default function HomeLayout({
                   </HoverCardContent>
                 </HoverCard>
               ) : null}
-              <nav className="hidden sm:flex items-center gap-2 bg-muted/30 rounded-full p-1">
+              <nav className="hidden gap-2 items-center p-1 rounded-full sm:flex bg-muted/30">
                 <NavItem href="/home" label="Practice" />
                 <NavItem href="/home/conversation" label="Conversation" />
                 <NavItem href="/home/leaderboard" label="Leaderboard" />
               </nav>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex gap-3 items-center">
               {user && !loading && currentCourse ? (
                 <>
-                  <div className="hidden sm:flex flex-col items-end leading-tight">
+                  <div className="hidden flex-col items-end leading-tight sm:flex">
                     <span className="text-sm font-medium">
                       {profile?.username ?? user.email}
                     </span>
                   </div>
                   <HoverCard openDelay={120} closeDelay={80}>
                     <HoverCardTrigger asChild>
-                      <Avatar className="h-9 w-9 ring-1 ring-border">
+                      <Avatar className="w-9 h-9 ring-1 ring-border">
                         <AvatarImage src={undefined} alt="avatar" />
                         <AvatarFallback className="bg-muted text-foreground">
                           {initials}
@@ -226,11 +226,11 @@ export default function HomeLayout({
                     <HoverCardContent
                       align="center"
                       side="bottom"
-                      className="w-auto p-3 border bg-card"
+                      className="p-3 w-auto border bg-card"
                     >
                       <Link
                         href="/home/profile"
-                        className="flex items-center gap-3"
+                        className="flex gap-3 items-center"
                       >
                         <Button variant="ghost" className="hover:bg-accent">
                           View Profile
@@ -263,8 +263,8 @@ export default function HomeLayout({
         <Separator className="opacity-60" />
 
         {/* Mobile nav */}
-        <div className="sm:hidden container mx-auto max-w-screen-xl px-4 py-2">
-          <div className="flex flex-wrap gap-2 bg-muted/30 rounded-xl p-2">
+        <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
+          <div className="flex flex-wrap gap-2 p-2 rounded-xl bg-muted/30">
             <NavItem href="/home/practice" label="Practice" />
             <NavItem href="/home/conversation" label="Conversation" />
             <NavItem href="/home/leaderboard" label="Leaderboard" />
@@ -273,9 +273,9 @@ export default function HomeLayout({
         </div>
       </header>
 
-      <main className="container mx-auto max-w-screen-xl px-4 py-6">
+      <div className="container flex-1 py-6 px-4 mx-auto min-h-0">
         {children}
-      </main>
+      </div>
     </div>
   );
 }

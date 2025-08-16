@@ -7,9 +7,7 @@ import { createServer } from "@/lib/supabase/server";
 export const runtime = "edge"; // switch to "nodejs" if you use Node-only tools
 
 export async function POST(req: NextRequest) {
-  const reqJson = await req.json();
-  console.log("req", reqJson);
-  const { theme, username, history, conversation_id } = reqJson;
+  const { theme, username, history, conversation_id } = await req.json();
   const supabase = await createServer();
   const {
     data: { user },
@@ -35,6 +33,7 @@ export async function POST(req: NextRequest) {
       history,
     }),
   ]);
+
   const rows = [
     {
       conversation_id: conversation_id,
@@ -56,15 +55,23 @@ export async function POST(req: NextRequest) {
     .upsert(rows)
     .select("id");
 
+  const messageIds: { user: any; assistant: any } = {
+    user: null,
+    assistant: null,
+  };
+
+  if (error === null) {
+    messageIds.user = data.find((m: any) => m.role === "user")?.id;
+    messageIds.assistant = data.find((m: any) => m.role === "assistant")?.id;
+  }
+
   return NextResponse.json(
     {
       native: response.native,
       romanization: response.romanization,
       english: response.english,
       remarks: remarks.remarks,
-      message_id: error
-        ? null
-        : { user_message_id: data[0].id, assistant_message_id: data[1].id },
+      messageIds: messageIds,
     },
     { status: 200 },
   );

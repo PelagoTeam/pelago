@@ -29,14 +29,14 @@ export default function LeaderboardPage() {
       const { data } = await supabase
         .from("Users")
         .select("username, total_points")
-        .eq("current_course", profile?.id)
+        .eq("current_course", profile?.current_course)
         .order("total_points", { ascending: false })
         .limit(10);
       if (data) setLeaderboard(data);
       setLoading(false);
     };
-    fetchLeaderboard();
-  }, [supabase]);
+    if (profile) fetchLeaderboard();
+  }, [supabase, profile]);
 
   const maxPoints = useMemo(
     () =>
@@ -49,7 +49,7 @@ export default function LeaderboardPage() {
   const [top1, top2, top3, ...rest] = leaderboard;
 
   return (
-    <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-b from-background to-muted/20">
+    <Card className="overflow-hidden border-0">
       <CardHeader className="pb-2">
         <div className="-m-6 -mb-2 p-6 pb-0">
           <div className="flex items-center justify-between">
@@ -57,21 +57,8 @@ export default function LeaderboardPage() {
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                 🏆
               </span>
-              Leaderboard
+              Weekly Leaderboard
             </CardTitle>
-
-            {/* Simple, non-functional segment (wire later if you track periods) */}
-            <div className="flex rounded-full bg-muted/50 p-1 text-sm">
-              <button className="px-3 py-1 rounded-full bg-background shadow">
-                Daily
-              </button>
-              <button className="px-3 py-1 rounded-full text-muted-foreground">
-                Weekly
-              </button>
-              <button className="px-3 py-1 rounded-full text-muted-foreground">
-                Monthly
-              </button>
-            </div>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             Top 10 players by points
@@ -232,7 +219,7 @@ function PodiumTile({
 
   return (
     <div
-      className={`relative rounded-2xl border bg-card/60 backdrop-blur ${tilePad} flex flex-col items-center justify-between shadow-md`}
+      className={`relative rounded-2xl border bg-background/60 backdrop-blur ${tilePad} flex flex-col items-center justify-between shadow-md`}
     >
       {highlight && (
         <span className="absolute -top-3 text-xl" title="Champion">

@@ -79,13 +79,9 @@ export default function Conversation({ id }: { id: string }) {
 
     setLoading(true);
 
-    // Hardcoded UUIDs
-    const userMsgId = "20f97e2f-bf29-4bbb-accb-9001ebdf8620";
-    const assistantMsgId = "7325ab2e-1272-4503-bf12-ed206f925f3d";
-
     // Optimistic state
     const optimisticUserMsg: Message = {
-      id: userMsgId,
+      id: "PLACEHOLDER_ID",
       role: "user",
       pending: true,
       content: input,
@@ -126,14 +122,14 @@ export default function Conversation({ id }: { id: string }) {
 
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
-      optimisticUserMsg.id = data.message_id.user_message_id ?? userMsgId;
+      optimisticUserMsg.id = data.messageIds.user;
 
       const newConversation: Conversation = {
         ...optimisticConversation,
         messages: [
           ...optimisticConversation.messages,
           {
-            id: data.message_id.assistant_message_id ?? assistantMsgId,
+            id: data.messageIds.assistant,
             role: "assistant",
             pending: false,
             content:

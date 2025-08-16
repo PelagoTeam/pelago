@@ -1,6 +1,5 @@
 import { useAuth } from "@/contexts/AuthProfileContext";
-import { createClient } from "@/lib/supabase/client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Theme } from "@/lib/types";
 import { Loader2, Plus } from "lucide-react";
@@ -17,9 +16,9 @@ export default function NewConversation({
   loading: boolean;
   onCreated: (id: string) => void;
 }) {
-  const supabase = useMemo(() => createClient(), []);
   const [themeId, setThemeId] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
 
   const createWithOpener = useCallback(async () => {
@@ -31,64 +30,28 @@ export default function NewConversation({
       return;
     }
 
-    const { data: theme } = await supabase
-      .from("themes")
-      .select("id, title, language, starter_prompt, difficulty")
-      .eq("id", themeId)
-      .single();
-    if (!theme) {
-      setCreating(false);
-      return;
-    }
-    const { data: conv, error: convErr } = await supabase
-      .from("conversations")
-      .insert({
-        user_id: profile.id,
-        theme_id: theme.id,
-        title: theme.title,
-      })
-      .select("id")
-      .single();
-
-    console.log("conversation created");
-
-    if (convErr || !conv?.id) {
-      setCreating(false);
-      return;
-    }
-
     try {
       const res = await fetch(`/api/theme`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ theme: theme, username: profile.username }),
+        body: JSON.stringify({ themeId: themeId, username: profile.username }),
       });
-      const data = await res.json();
-      const starting_text =
-        data.native + "\n" + data.romanization + "\n" + data.english;
-      console.log("text generted");
 
-      const { error: msgErr } = await supabase.from("messages").insert({
-        conversation_id: conv.id,
-        role: "assistant",
-        content: starting_text,
-        user_id: profile.id,
-      });
-      console.log("message saved");
-      if (msgErr) {
-        setCreating(false);
-        console.error("error saving message", msgErr);
-        return;
+      if (!res.ok) {
+        setError("An error occurred. Please refresh and try again.");
       }
+
+      const data = await res.json();
+
+      onCreated(data.id);
     } catch (err) {
       console.error("error generating text", err);
+    } finally {
+      setCreating(false);
     }
-
-    setCreating(false);
-    onCreated(conv.id);
-  }, [themeId, supabase, onCreated, profile]);
+  }, [themeId, onCreated, profile]);
 
   return (
     <div className="flex h-auto justify-center p-6">
@@ -164,6 +127,7 @@ export default function NewConversation({
                   )}
                 </Button>
               </div>
+              {error && <p className="text-red-500">{error}</p>}
             </>
           )}
         </CardContent>

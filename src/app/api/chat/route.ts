@@ -51,7 +51,10 @@ export async function POST(req: NextRequest) {
     },
   ];
 
-  const { error } = await supabase.from("messages").insert(rows);
+  const { data, error } = await supabase
+    .from("messages")
+    .upsert(rows)
+    .select("id");
 
   return NextResponse.json(
     {
@@ -59,7 +62,9 @@ export async function POST(req: NextRequest) {
       romanization: response.romanization,
       english: response.english,
       remarks: remarks.remarks,
-      error: error?.message,
+      message_id: error
+        ? null
+        : { user_message_id: data[0].id, assistant_message_id: data[1].id },
     },
     { status: 200 },
   );

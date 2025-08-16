@@ -55,7 +55,7 @@ export default function ConversationPage() {
     };
     loadConversations();
     loadThemes();
-  }, [loadConversations, supabase]);
+  }, [loadConversations, supabase, conversationId]);
 
   function handleSelectConversation(id: string) {
     router.push(`/home/conversation?id=${id}`);
@@ -86,7 +86,6 @@ export default function ConversationPage() {
     <div className="flex h-[calc(100vh-64px)]">
       <ConversationSidebar
         conversations={conversations}
-        activeId={conversationId}
         onSelect={handleSelectConversation}
         onNewConversation={handleNewConversation}
         onDeleteConversation={handleDeleteConversation}

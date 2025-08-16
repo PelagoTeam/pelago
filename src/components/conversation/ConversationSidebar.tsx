@@ -1,6 +1,5 @@
 "use client";
 
-import clsx from "clsx";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, MoreVertical, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ConversationType } from "@/lib/types";
+import { useSearchParams } from "next/navigation";
 
 /**
  * ChatSidebar
@@ -24,28 +24,22 @@ import { ConversationType } from "@/lib/types";
  */
 export default function ConversationSidebar({
   conversations,
-  activeId,
   onSelect,
   onNewConversation,
   onDeleteConversation,
   hrefBase,
-  className,
 }: {
   conversations: ConversationType[];
-  activeId?: string;
   onSelect: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
   hrefBase?: string; // e.g. "/chat" -> navigates to /chat/[id]
-  className?: string;
 }) {
+  const search = useSearchParams();
+  const activeId = search.get("id");
+
   return (
-    <aside
-      className={clsx(
-        "flex h-full w-72 shrink-0 flex-col border-r bg-background/60 backdrop-blur-sm",
-        className,
-      )}
-    >
+    <aside className="flex h-full w-72 shrink-0 flex-col border-r bg-background/60 backdrop-blur-sm">
       <div className="p-3">
         <div className="flex items-center gap-2">
           <div className="text-lg font-semibold">Chats</div>
@@ -114,19 +108,13 @@ function ItemLink({
   return (
     <Link
       href={href}
-      className={clsx(
-        "group flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors",
-        active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted",
-      )}
+      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}`}
       title={conversation.title}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
           <div
-            className={clsx(
-              "truncate text-sm font-medium",
-              active && "text-primary",
-            )}
+            className={`truncate text-sm font-medium ${active && "text-primary"}`}
           >
             {conversation.title}
           </div>
@@ -158,19 +146,15 @@ function ItemButton({
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onClick?.();
       }}
-      className={clsx(
-        "group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-colors focus-visible:ring-2",
-        active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted",
-      )}
+      className={`
+        group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-colors focus-visible:ring-2 ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}
+      `}
       title={conversation.title}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
           <div
-            className={clsx(
-              "truncate text-sm font-medium",
-              active && "text-primary",
-            )}
+            className={`truncate text-sm font-medium ${active && "text-primary"}`}
           >
             {conversation.title}
           </div>

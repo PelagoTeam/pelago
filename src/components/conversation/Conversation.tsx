@@ -43,6 +43,7 @@ export default function Conversation({ id }: { id: string }) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { profile } = useAuth();
 
   useEffect(() => {
@@ -119,15 +120,20 @@ export default function Conversation({ id }: { id: string }) {
 
       const data = await res.json();
 
+      if (data.error) {
+        setError("An error has occurred. Please refresh and try again.");
+      }
+
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
+      optimisticUserMsg.id = data.message_id.user_message_id ?? userMsgId;
 
       const newConversation: Conversation = {
         ...optimisticConversation,
         messages: [
           ...optimisticConversation.messages,
           {
-            id: assistantMsgId,
+            id: data.message_id.assistant_message_id ?? assistantMsgId,
             role: "assistant",
             pending: false,
             content:
@@ -146,7 +152,7 @@ export default function Conversation({ id }: { id: string }) {
       setConversation(prevConversation);
       setInput(prevInput);
 
-      // Optionally: surface error to the user (toast / error state)
+      // Optionally: surface error to the user (toast / error state)l
       // setError?.("Failed to send message. Please try again.");
     } finally {
       setLoading(false);
@@ -180,6 +186,7 @@ export default function Conversation({ id }: { id: string }) {
           )}
         </div>
         <Separator />
+        {error && <p className="text-red-600 mb-4">{error}</p>}
         <div className="flex gap-3">
           <Textarea
             value={input}

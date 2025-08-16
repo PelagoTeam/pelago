@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
-import ConversationLoading from "./ConversationSkeleton";
+import { Skeleton } from "../ui/skeleton";
 
 type Conversation = {
   topic: string;
@@ -67,10 +67,6 @@ export default function Conversation({ id }: { id: string }) {
     if (!el) return;
     el.scrollTop = el.scrollHeight;
   }, [conversation?.messages.length, loading]);
-
-  if (!conversation) {
-    return <ConversationLoading />;
-  }
 
   async function send() {
     if (!input.trim()) {
@@ -162,6 +158,40 @@ export default function Conversation({ id }: { id: string }) {
     }
   }
 
+  if (!conversation) {
+    return (
+      <Card className="flex flex-col w-full h-full">
+        <CardHeader>
+          <CardTitle className="flex gap-1 items-center">
+            <span>Conversation • </span>
+            <Skeleton className="h-[1.5rem] w-[6rem]" />
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex flex-col flex-1 gap-3 min-h-0">
+          <div className="flex overflow-y-scroll flex-col flex-1 gap-3 min-h-0 no-scrollbar">
+            <Skeleton className="h-10 w-xl" />
+            <Skeleton className="self-end h-10 w-lg" />
+            <Skeleton className="h-10 w-md" />
+          </div>
+
+          <Separator />
+
+          <div className="flex gap-3">
+            <Textarea
+              disabled={true}
+              placeholder="Type your message…"
+              className="max-w-full h-9 resize-none min-h-9"
+            />
+            <Button disabled={true} size="icon">
+              <SendIcon />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="flex flex-col w-full h-full">
       <CardHeader>
@@ -194,7 +224,7 @@ export default function Conversation({ id }: { id: string }) {
 
         {error && <p className="text-red-600">{error}</p>}
 
-        <div className="flex 0gap-3">
+        <div className="flex gap-3">
           <Textarea
             value={input}
             onChange={(e) => {

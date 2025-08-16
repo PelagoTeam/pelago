@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
+import ConversationLoading from "./ConversationSkeleton";
 
 type Conversation = {
   topic: string;
@@ -44,25 +45,32 @@ export default function Conversation({ id }: { id: string }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const { profile } = useAuth();
 
   useEffect(() => {
     let running = false;
     (async () => {
-      if (!running) {
+      if (!running && profile) {
         running = true;
-        const conversation = await getConversation(id);
+        const conversation = await getConversation(id, profile.id);
         setConversation(conversation);
       }
     })();
     return () => {
       running = true;
     };
-  }, [id]);
+  }, [id, profile]);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [conversation?.messages.length, loading]);
 
   if (!conversation) {
     // TODO: loading state
-    return <div>loading...</div>;
+    return <ConversationLoading />;
   }
 
   async function send() {
@@ -170,7 +178,10 @@ export default function Conversation({ id }: { id: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
+        <div
+          className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]"
+          ref={scrollerRef}
+        >
           {conversation.messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
@@ -190,7 +201,16 @@ export default function Conversation({ id }: { id: string }) {
         <div className="flex gap-3">
           <Textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (error) setError("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (!loading && input.trim()) send();
+              }
+            }}
             placeholder="Type your message…"
             className="max-w-full h-9 resize-none min-h-9"
           />
@@ -239,12 +259,16 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
   );
 }
 
-async function getConversation(id: string): Promise<Conversation> {
+async function getConversation(
+  id: string,
+  user_id: string,
+): Promise<Conversation> {
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
     .select("id, role, content, remarks")
     .eq("conversation_id", id)
+    .eq("user_id", user_id)
     .order("created_at", { ascending: true });
   if (error) throw error;
   const { data: conversation, error: e } = await supabase

@@ -51,7 +51,6 @@ export default function Conversation({ id }: { id: string }) {
       if (!running) {
         running = true;
         const conversation = await getConversation(id);
-        console.log("conversation", conversation);
         setConversation(conversation);
       }
     })();
@@ -110,6 +109,7 @@ export default function Conversation({ id }: { id: string }) {
           theme: optimisticConversation.topic,
           username: profile?.username,
           history: optimisticConversation.messages,
+          conversation_id: id,
         }),
       });
 
@@ -236,9 +236,9 @@ async function getConversation(id: string): Promise<Conversation> {
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("id, role, content")
+    .select("id, role, content, remarks")
     .eq("conversation_id", id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
   if (error) throw error;
   const { data: conversation, error: e } = await supabase
     .from("conversations")
@@ -254,6 +254,7 @@ async function getConversation(id: string): Promise<Conversation> {
       id: message.id,
       role: message.role,
       content: message.content,
+      remarks: message.remarks,
       pending: false,
     })),
   };

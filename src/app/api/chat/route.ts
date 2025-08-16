@@ -2,13 +2,23 @@ import { z } from "zod";
 import { generateObject } from "ai";
 import { NextRequest, NextResponse } from "next/server";
 import { model } from "@/lib/sealion";
+import { createServer } from "@/lib/supabase/server";
 
 export const runtime = "edge"; // switch to "nodejs" if you use Node-only tools
 
 export async function POST(req: NextRequest) {
   const reqJson = await req.json();
   console.log("req", reqJson);
-  const { theme, username, history } = reqJson;
+  const { theme, username, history, conversation_id } = reqJson;
+  const supabase = await createServer();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const [response, remarks] = await Promise.all([
     generateResponse({
@@ -25,6 +35,23 @@ export async function POST(req: NextRequest) {
       history,
     }),
   ]);
+  const rows = [
+    {
+      conversation_id: conversation_id,
+      role: "user",
+      content: history[history.length - 1].content,
+      user_id: user.id,
+      remarks: remarks.remarks,
+    },
+    {
+      conversation_id: conversation_id,
+      role: "assistant",
+      content: `${response.native}\n${response.romanization}\n${response.english}`,
+      user_id: user.id,
+    },
+  ];
+
+  const { error } = await supabase.from("messages").insert(rows);
 
   return NextResponse.json(
     {
@@ -32,6 +59,7 @@ export async function POST(req: NextRequest) {
       romanization: response.romanization,
       english: response.english,
       remarks: remarks.remarks,
+      error: error?.message,
     },
     { status: 200 },
   );

@@ -39,23 +39,23 @@ export default function ConversationSidebar({
   const activeId = search.get("id");
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r bg-background/60 backdrop-blur-sm">
+    <aside className="flex flex-col w-72 h-full border-r shrink-0 bg-background/60 backdrop-blur-sm">
       <div className="p-3">
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2 items-center">
           <div className="text-lg font-semibold">Chats</div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex gap-2 items-center ml-auto">
             <Button
               size="sm"
               onClick={onNewConversation}
               className="rounded-xl"
               variant="default"
             >
-              <Plus className="mr-1 h-4 w-4" /> New chat
+              <Plus className="mr-1 w-4 h-4" /> New chat
             </Button>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 rounded-xl border px-2 py-1.5">
-          <Search className="h-4 w-4 shrink-0" />
+        <div className="flex gap-2 items-center py-1.5 px-2 mt-3 rounded-xl border">
+          <Search className="w-4 h-4 shrink-0" />
           <Input
             placeholder="Search chats"
             className="h-7 border-0 focus-visible:ring-0"
@@ -66,9 +66,9 @@ export default function ConversationSidebar({
 
       {/* List */}
       <ScrollArea className="h-full">
-        <ul className="p-2">
+        <ul className="flex flex-col gap-1 p-2">
           {conversations.length === 0 && (
-            <li className="px-3 py-8 text-center text-sm text-muted-foreground">
+            <li className="py-8 px-3 text-sm text-center text-muted-foreground">
               No chats found
             </li>
           )}
@@ -111,8 +111,8 @@ function ItemLink({
       className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}`}
       title={conversation.title}
     >
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex gap-2 items-center">
           <div
             className={`truncate text-sm font-medium ${active && "text-primary"}`}
           >
@@ -121,7 +121,7 @@ function ItemLink({
         </div>
       </div>
       <div className="ml-1 text-muted-foreground">
-        <MoreVertical className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+        <MoreVertical className="w-4 h-4 opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
     </Link>
   );
@@ -151,8 +151,8 @@ function ItemButton({
       `}
       title={conversation.title}
     >
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex gap-2 items-center">
           <div
             className={`truncate text-sm font-medium ${active && "text-primary"}`}
           >
@@ -161,7 +161,7 @@ function ItemButton({
         </div>
       </div>
       <button
-        className="ml-1 rounded-md p-1 text-muted-foreground hover:bg-muted opacity-0 transition-opacity group-hover:opacity-100"
+        className="p-1 ml-1 rounded-md opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:bg-muted"
         onClick={(e) => {
           e.stopPropagation();
           onDelete?.();
@@ -169,7 +169,7 @@ function ItemButton({
         aria-label="Delete chat"
         title="Delete chat"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2 className="w-4 h-4" />
       </button>
     </div>
   );

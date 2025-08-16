@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import "@/app/globals.css";
 import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthProfileContext";
@@ -16,10 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <AuthProvider>
-          <div>{children}</div>
-        </AuthProvider>
+      <body className="antialiased h-[100svh] w-[100svw] text-foreground">
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

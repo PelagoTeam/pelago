@@ -83,7 +83,7 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex gap-3 h-full">
       <ConversationSidebar
         conversations={conversations}
         onSelect={handleSelectConversation}
@@ -92,11 +92,11 @@ export default function ConversationPage() {
       />
 
       {loadingConversations ? (
-        <div className="flex flex-1 items-center justify-center">
+        <div className="flex flex-1 justify-center items-center">
           Loading...
         </div>
       ) : (
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0">
           {conversationId ? (
             <Conversation id={conversationId} />
           ) : (

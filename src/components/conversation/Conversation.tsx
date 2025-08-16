@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
+import { Skeleton } from "../ui/skeleton";
 
 type Conversation = {
   topic: string;
@@ -61,8 +62,7 @@ export default function Conversation({ id }: { id: string }) {
   }, [id]);
 
   if (!conversation) {
-    // TODO: loading state
-    return <div>loading...</div>;
+    return <Skeleton className="w-full h-full bg-secondary" />;
   }
 
   async function send() {
@@ -160,7 +160,7 @@ export default function Conversation({ id }: { id: string }) {
   }
 
   return (
-    <Card className="shadow-md">
+    <Card className="flex flex-col w-full h-full">
       <CardHeader>
         <CardTitle>
           Conversation •{" "}
@@ -169,8 +169,9 @@ export default function Conversation({ id }: { id: string }) {
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="overflow-y-auto pr-2 space-y-3 max-h-[50vh]">
+
+      <CardContent className="flex flex-col flex-1 gap-3 min-h-0">
+        <div className="flex overflow-y-scroll flex-col flex-1 gap-3 min-h-0 no-scrollbar">
           {conversation.messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
@@ -185,9 +186,12 @@ export default function Conversation({ id }: { id: string }) {
             />
           )}
         </div>
+
         <Separator />
-        {error && <p className="text-red-600 mb-4">{error}</p>}
-        <div className="flex gap-3">
+
+        {error && <p className="text-red-600">{error}</p>}
+
+        <div className="flex 0gap-3">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

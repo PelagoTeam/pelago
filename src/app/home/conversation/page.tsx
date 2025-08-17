@@ -78,7 +78,7 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="flex gap-3 h-full">
+    <div className="flex gap-3 px-3 h-full">
       <ConversationSidebar
         conversations={conversations}
         onSelect={handleSelectConversation}

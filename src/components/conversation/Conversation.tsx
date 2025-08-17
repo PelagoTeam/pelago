@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Conversation = {
   topic: string;
@@ -54,6 +54,7 @@ export default function Conversation({ id }: { id: string }) {
       if (!running && profile) {
         running = true;
         const conversation = await getConversation(id, profile.id);
+        console.log("conversation", conversation);
         setConversation(conversation);
       }
     })();

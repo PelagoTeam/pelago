@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import MCQQuiz, { MCQData } from "@/components/Quiz/MCQQuiz";
 import ComposeQuiz, { ComposeData } from "@/components/Quiz/ComposeQuiz";
+import { Button } from "@/components/ui/button";
 
 type QuestionRow = {
   question_id: string;
@@ -34,23 +35,6 @@ type ComposeQuestion = {
 
 type Question = MCQQuestion | ComposeQuestion;
 
-function isMCQData(x: any): x is MCQData {
-  return (
-    x &&
-    typeof x === "object" &&
-    Array.isArray(x.options) &&
-    typeof x.answer === "string"
-  );
-}
-function isComposeData(x: any): x is ComposeData {
-  return (
-    x &&
-    typeof x === "object" &&
-    Array.isArray(x.tokens) &&
-    Array.isArray(x.answer_order)
-  );
-}
-
 export default function QuizPage() {
   const router = useRouter();
   const search = useSearchParams();
@@ -61,7 +45,6 @@ export default function QuizPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [roundQueue, setRoundQueue] = useState<Question[]>([]);
   const [retryBucket, setRetryBucket] = useState<Question[]>([]);
@@ -94,7 +77,7 @@ export default function QuizPage() {
         const normalized: Question[] = (data ?? [])
           .map((r: QuestionRow) => {
             const prompt = (r.prompt ?? "").toString();
-            if (r.type === "mcq" && isMCQData(r.payload)) {
+            if (r.type === "mcq") {
               return {
                 question_id: r.question_id,
                 position: r.position,
@@ -103,7 +86,7 @@ export default function QuizPage() {
                 payload: r.payload,
               };
             }
-            if (r.type === "compose" && isComposeData(r.payload)) {
+            if (r.type === "compose") {
               return {
                 question_id: r.question_id,
                 position: r.position,
@@ -128,8 +111,11 @@ export default function QuizPage() {
         setIndex(0);
         setRound(1);
         setChecked(null);
-      } catch (e: any) {
-        setError(e?.message ?? "Failed to load questions.");
+      } catch (err: unknown) {
+        if (!active) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to load questions.";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -139,7 +125,7 @@ export default function QuizPage() {
     return () => {
       active = false;
     };
-  }, [moduleId]);
+  }, [moduleId, supabase]);
 
   const current = roundQueue[index];
   const explanation =
@@ -185,7 +171,6 @@ export default function QuizPage() {
   async function completeAndExit() {
     try {
       if (profile?.id) {
-        setSaving(true);
         const { data: p, error: selErr } = await supabase
           .from("user_courses")
           .select("stage, module")
@@ -250,8 +235,7 @@ export default function QuizPage() {
       } catch (e) {
         console.error("Failed to update module completion:", e);
       }
-      router.replace("/home");
-      setSaving(false);
+      router.back();
     }
   }
 
@@ -285,6 +269,7 @@ export default function QuizPage() {
   return (
     <div className="mx-auto max-w-2xl p-6">
       {/* Header */}
+      <Button onClick={() => router.back()}>Back</Button>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Quiz</h1>

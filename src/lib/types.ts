@@ -39,6 +39,7 @@ export type Module = {
   module_id: string;
   order: number;
   course_id: string;
+  stage_number: number;
 };
 
 export type Stages = {

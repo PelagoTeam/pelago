@@ -33,7 +33,7 @@ export default function ComposeQuiz({
   function toggleToken(id: string) {
     if (locked) return;
     setAnswer((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 

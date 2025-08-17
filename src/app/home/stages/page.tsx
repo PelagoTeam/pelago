@@ -9,7 +9,7 @@ import type { Stages } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Check, Lock, PlayCircle, Loader2 } from "lucide-react";
+import { Check, Lock, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function StagePage() {
@@ -73,18 +73,18 @@ export default function StagePage() {
   }
 
   const goToStage = (stageId: string) => {
-    router.push(`/home`);
+    router.push(`/home?stage=${stageId}`);
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Stages</h2>
         <Badge variant="secondary">
           {Math.min(
             // count done as strictly below current
             stages.filter((s) => s.stage_number < currentStage).length,
-            stages.length
+            stages.length,
           )}
           /{stages.length} completed
         </Badge>
@@ -96,8 +96,8 @@ export default function StagePage() {
             stage.stage_number < currentStage
               ? "done"
               : stage.stage_number === currentStage
-              ? "current"
-              : "locked";
+                ? "current"
+                : "locked";
 
           const isLocked = state === "locked";
           const isCurrent = state === "current";
@@ -110,14 +110,14 @@ export default function StagePage() {
                 "relative overflow-hidden border transition",
                 isDone && "bg-secondary/60",
                 isCurrent && "ring-2 ring-primary/30",
-                isLocked && "opacity-90"
+                isLocked && "opacity-90",
               )}
             >
               {/* Accent bar on top */}
               <div
                 className={cn(
                   "absolute inset-x-0 top-0 h-1",
-                  isDone ? "bg-primary" : isCurrent ? "bg-accent" : "bg-border"
+                  isDone ? "bg-primary" : isCurrent ? "bg-accent" : "bg-border",
                 )}
               />
 
@@ -169,8 +169,8 @@ export default function StagePage() {
                   isDone
                     ? "bg-primary/15"
                     : isCurrent
-                    ? "bg-accent/20"
-                    : "bg-muted/40"
+                      ? "bg-accent/20"
+                      : "bg-muted/40",
                 )}
               />
             </Card>

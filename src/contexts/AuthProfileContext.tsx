@@ -8,7 +8,7 @@ import {
   useEffect,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { Profile } from "@/lib/types";
 
 type Ctx = {
@@ -50,48 +50,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setProfile(data ?? null);
-      console.log("loadProfile", data, loading);
     },
     [supabase],
   );
 
   useEffect(() => {
     let cancelled = false;
-
-    // 1) Prime initial state
     (async () => {
       setLoading(true);
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-      if (error) console.error("[Auth] getSession error:", error);
-      if (cancelled) return;
-
-      const u = session?.user ?? null;
-      setUser(u);
-      await loadProfile(u);
-      if (!cancelled) setLoading(false); // always end initial load
-    })();
-
-    // 2) Subscribe for future changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (event, session: Session | null) => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (cancelled) return;
         const u = session?.user ?? null;
         setUser(u);
-
-        // Optional: show a spinner only for explicit transitions
-        // setLoading(event === "SIGNED_IN" || event === "SIGNED_OUT");
-
         await loadProfile(u);
+      } catch (e) {
+        console.error("[Auth] boot error:", e);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
 
-        // if you enabled the spinner above, you can turn it off here
-        // if (event === "SIGNED_IN" || event === "SIGNED_OUT") setLoading(false);
-      },
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      const u = session?.user ?? null;
+      setUser(u);
+      loadProfile(u);
+    });
 
     return () => {
       cancelled = true;

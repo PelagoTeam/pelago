@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 
 type Slide = {
@@ -53,8 +51,6 @@ export default function Login() {
   }, []);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams?.get("next") || "/home";
 
   function normalizeAuthError(e: unknown) {
     const message =
@@ -90,7 +86,7 @@ export default function Login() {
         password,
       });
       if (error) throw error;
-      router.replace(next);
+      router.replace("/home");
     } catch (err) {
       setError(normalizeAuthError(err));
     } finally {

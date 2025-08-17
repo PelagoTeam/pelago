@@ -94,8 +94,6 @@ export default function HomeLayout({
     fetchIcon();
   }, [profile, supabase]);
 
-  if (authLoading) return null;
-
   if (!profile && user && !authLoading) return <CoursePickerPage />;
 
   const initials = (

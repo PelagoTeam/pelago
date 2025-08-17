@@ -56,32 +56,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       setLoading(true);
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-      if (error) console.error("[Auth] getSession error:", error);
-      if (cancelled) return;
-
-      const u = session?.user ?? null;
-      setUser(u);
-      await loadProfile(u);
-      if (!cancelled) setLoading(false);
-    })();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (event, session: Session | null) => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (cancelled) return;
         const u = session?.user ?? null;
         setUser(u);
         await loadProfile(u);
-      },
-    );
+      } catch (e) {
+        console.error("[Auth] boot error:", e);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (cancelled) return;
+      const u = session?.user ?? null;
+      setUser(u);
+      await loadProfile(u);
+    });
 
     return () => {
       cancelled = true;

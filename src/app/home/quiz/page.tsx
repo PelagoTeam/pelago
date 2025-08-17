@@ -45,7 +45,6 @@ export default function QuizPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [roundQueue, setRoundQueue] = useState<Question[]>([]);
   const [retryBucket, setRetryBucket] = useState<Question[]>([]);
@@ -112,8 +111,11 @@ export default function QuizPage() {
         setIndex(0);
         setRound(1);
         setChecked(null);
-      } catch (e: any) {
-        setError(e?.message ?? "Failed to load questions.");
+      } catch (err: unknown) {
+        if (!active) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to load questions.";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -123,7 +125,7 @@ export default function QuizPage() {
     return () => {
       active = false;
     };
-  }, [moduleId]);
+  }, [moduleId, supabase]);
 
   const current = roundQueue[index];
   const explanation =
@@ -169,7 +171,6 @@ export default function QuizPage() {
   async function completeAndExit() {
     try {
       if (profile?.id) {
-        setSaving(true);
         const { data: p, error: selErr } = await supabase
           .from("user_courses")
           .select("stage, module")
@@ -235,7 +236,6 @@ export default function QuizPage() {
         console.error("Failed to update module completion:", e);
       }
       router.back();
-      setSaving(false);
     }
   }
 

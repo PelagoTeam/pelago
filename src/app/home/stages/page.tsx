@@ -77,7 +77,7 @@ export default function StagePage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 px-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Stages</h2>
         <Badge variant="secondary">

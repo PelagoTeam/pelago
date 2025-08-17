@@ -116,9 +116,12 @@ export default function ProfilePage() {
 
       setStatus({ type: "ok", msg: "Profile saved." });
       await refresh();
-    } catch (e: any) {
-      console.error("[Profile] save error:", e?.message ?? e);
-      setStatus({ type: "err", msg: "Could not save changes." });
+    } catch (err: unknown) {
+      let msg = "Could not save changes.";
+      if (typeof err === "string") msg = err;
+      else if (err instanceof Error) msg = err.message;
+      console.error("[Profile] save error:", msg, err);
+      setStatus({ type: "err", msg });
     } finally {
       setSaving(false);
     }

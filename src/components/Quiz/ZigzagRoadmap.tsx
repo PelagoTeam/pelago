@@ -66,7 +66,7 @@ export default function ZigZagRoadmap({
     return sorted.map((m, i) => {
       const y = i * STEP_Y;
       const x = i === 0 ? 0 : i % 2 === 1 ? +OFFSET_X : -OFFSET_X;
-      return { i, m, x, y };
+      return { m, x, y };
     });
   }, [sorted]);
 
@@ -109,7 +109,7 @@ export default function ZigZagRoadmap({
 
           return (
             <div
-              key={`edge-${n.i}`}
+              key={`edge-${k}`}
               style={{
                 position: "absolute",
                 left: `calc(50% + ${cx}px)`,
@@ -137,7 +137,7 @@ export default function ZigZagRoadmap({
           );
         })}
 
-        {nodes.map(({ i, m, x, y }) => {
+        {nodes.map(({ m, x, y }) => {
           const st = stateForModule(m);
           const clickable = st !== "locked";
 

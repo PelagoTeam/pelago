@@ -52,8 +52,12 @@ export default function CoursePickerPage() {
             setCourses(data ?? []);
           }
         }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Failed to load courses.");
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const msg =
+          err instanceof Error ? err.message : "Failed to load courses.";
+        setError(msg);
+        setCourses([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -94,8 +98,10 @@ export default function CoursePickerPage() {
       console.log("saved");
       await refresh();
       router.replace("/home");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to save course selection.");
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to save course selection.";
+      setError(msg);
     } finally {
       setSaving(false);
     }

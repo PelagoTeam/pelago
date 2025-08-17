@@ -55,14 +55,17 @@ export async function POST(req: NextRequest) {
     .upsert(rows)
     .select("id, role");
 
-  const messageIds: { user: any; assistant: any } = {
+  const messageIds: {
+    user: { id: string; role: string } | null;
+    assistant: { id: string; role: string } | null;
+  } = {
     user: null,
     assistant: null,
   };
 
   if (error === null) {
-    messageIds.user = data.find((m: any) => m.role === "user")?.id;
-    messageIds.assistant = data.find((m: any) => m.role === "assistant")?.id;
+    messageIds.user = data.find((m) => m.role === "user")?.id;
+    messageIds.assistant = data.find((m) => m.role === "assistant")?.id;
   }
 
   return NextResponse.json(

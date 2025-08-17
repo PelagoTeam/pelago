@@ -57,18 +57,26 @@ export default function Login() {
   const next = searchParams?.get("next") || "/home";
 
   function normalizeAuthError(e: unknown) {
-    try {
-      const msg = (e as any)?.message
-        ? String((e as any).message).toLowerCase()
-        : String(e || "");
-      if (msg.includes("email not confirmed"))
-        return "Please verify your email before signing in.";
-      if (msg.includes("invalid login credentials"))
-        return "Invalid email or password.";
-      return "Sign-in failed. Please try again.";
-    } catch {
-      return "Sign-in failed. Please try again.";
+    const message =
+      typeof e === "string"
+        ? e
+        : e instanceof Error
+          ? e.message
+          : typeof e === "object" &&
+              e !== null &&
+              "message" in e &&
+              typeof (e as { message?: unknown }).message === "string"
+            ? (e as { message: string }).message
+            : "";
+
+    const lower = message.toLowerCase();
+    if (lower.includes("email not confirmed")) {
+      return "Please verify your email before signing in.";
     }
+    if (lower.includes("invalid login credentials")) {
+      return "Invalid email or password.";
+    }
+    return "Sign-in failed. Please try again.";
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -158,8 +166,11 @@ export default function Login() {
                       key={i}
                       onClick={() => setIdx(i)}
                       aria-label={`Go to slide ${i + 1}`}
-                      className={`h-2 w-6 rounded-full transition ${i === idx ? "bg-primary" : "bg-muted/60 hover:bg-muted/80"
-                        }`}
+                      className={`h-2 w-6 rounded-full transition ${
+                        i === idx
+                          ? "bg-primary"
+                          : "bg-muted/60 hover:bg-muted/80"
+                      }`}
                     />
                   ))}
                 </div>
@@ -175,7 +186,10 @@ export default function Login() {
                   <CardTitle className="text-2xl">Sign in</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     Don{"'"}t have an account?{" "}
-                    <Link href="/signup" className="underline underline-offset-4">
+                    <Link
+                      href="/signup"
+                      className="underline underline-offset-4"
+                    >
                       Create one
                     </Link>
                   </p>
@@ -223,21 +237,35 @@ export default function Login() {
                           type="button"
                           onClick={() => setShowPwd(!showPwd)}
                           className="absolute inset-y-0 right-0 grid w-10 place-items-center text-muted-foreground"
-                          aria-label={showPwd ? "Hide password" : "Show password"}
+                          aria-label={
+                            showPwd ? "Hide password" : "Show password"
+                          }
                           aria-pressed={showPwd}
                         >
-                          {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPwd ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
 
                     {error && (
-                      <p className="text-sm text-red-500" role="alert" aria-live="polite">
+                      <p
+                        className="text-sm text-red-500"
+                        role="alert"
+                        aria-live="polite"
+                      >
                         {error}
                       </p>
                     )}
 
-                    <Button className="w-full gap-2" disabled={loading} type="submit">
+                    <Button
+                      className="w-full gap-2"
+                      disabled={loading}
+                      type="submit"
+                    >
                       {loading ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -254,11 +282,17 @@ export default function Login() {
 
                   <p className="mt-4 text-center text-xs text-muted-foreground">
                     By continuing, you agree to our{" "}
-                    <Link href="/terms" className="underline underline-offset-4">
+                    <Link
+                      href="/terms"
+                      className="underline underline-offset-4"
+                    >
                       Terms
                     </Link>{" "}
                     and{" "}
-                    <Link href="/privacy" className="underline underline-offset-4">
+                    <Link
+                      href="/privacy"
+                      className="underline underline-offset-4"
+                    >
                       Privacy Policy
                     </Link>
                     .

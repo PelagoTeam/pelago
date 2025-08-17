@@ -313,7 +313,7 @@ export default function HomeLayout({
           </div>
         </header>
 
-        <div className="flex-1 py-6 px-4 w-full min-h-0">{children}</div>
+        <div className="flex-1 py-6">{children}</div>
       </div>
     </RequireAuth>
   );

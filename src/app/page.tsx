@@ -46,8 +46,8 @@ export default function LandingPage() {
       }
       ticking = true;
       requestAnimationFrame(() => {
-        const max = el.scrollHeight - el.clientHeight;
-        const p = max > 0 ? el.scrollTop / max : 0; // 0..1
+        const max = el!.scrollHeight - el!.clientHeight;
+        const p = max > 0 ? el!.scrollTop / max : 0; // 0..1
         setBgY(10 + 80 * Math.min(Math.max(p, 0), 1)); // 10% -> 90%
         ticking = false;
       });
@@ -92,23 +92,6 @@ export default function LandingPage() {
                 Pelago blends language with culture so your first hello, market
                 haggle, and coffee chat feel natural.
               </p>
-
-              <div className="flex flex-wrap gap-3 items-center mt-7">
-                <Button
-                  asChild
-                  className="bg-white rounded-xl text-stone-900 hover:bg-white/90"
-                >
-                  <Link href="/signup">Start free</Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="text-white rounded-xl border-white/40 hover:bg-white/10"
-                >
-                  <Link href="/login">Sign in</Link>
-                </Button>
-              </div>
-
               <ScrollHint />
             </div>
           </div>
@@ -130,17 +113,8 @@ export default function LandingPage() {
                 style={{ textShadow: "0 1px 12px rgba(0,0,0,.45)" }}
               >
                 Quick practice sets and phrasebook tips tuned to Thai,
-                Vietnamese, Tagalog, and Singlish.
+                Vietnamese, Tagalog, Singlish and more.
               </p>
-
-              <div className="flex gap-3 justify-end mt-7">
-                <Button
-                  asChild
-                  className="bg-white rounded-xl text-stone-900 hover:bg-white/90"
-                >
-                  <Link href="/signup">Try a demo set</Link>
-                </Button>
-              </div>
 
               <div className="flex flex-wrap gap-2 justify-end mt-5">
                 {[
@@ -182,22 +156,6 @@ export default function LandingPage() {
                 Practice markets, transit, and street food chats with feedback
                 on tone and etiquette.
               </p>
-
-              <div className="flex gap-3 items-center mt-7">
-                <Button
-                  asChild
-                  className="bg-white rounded-xl text-stone-900 hover:bg-white/90"
-                >
-                  <Link href="/signup">Create free account</Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="text-white rounded-xl border-white/40 hover:bg-white/10"
-                >
-                  <Link href="/login">I already have an account</Link>
-                </Button>
-              </div>
             </div>
           </div>
         </section>
@@ -225,29 +183,6 @@ function SiteHeader() {
           </span>
           <span className={headline.className}>Pelago</span>
         </Link>
-        <nav className="hidden gap-6 items-center text-sm md:flex">
-          <a
-            href="#"
-            className="hover:text-white text-white/90"
-            style={{ textShadow: "0 1px 8px rgba(0,0,0,.6)" }}
-          >
-            Features
-          </a>
-          <a
-            href="#"
-            className="hover:text-white text-white/90"
-            style={{ textShadow: "0 1px 8px rgba(0,0,0,.6)" }}
-          >
-            Languages
-          </a>
-          <a
-            href="#"
-            className="hover:text-white text-white/90"
-            style={{ textShadow: "0 1px 8px rgba(0,0,0,.6)" }}
-          >
-            How it works
-          </a>
-        </nav>
         <div className="flex gap-2 items-center">
           <Button
             asChild

@@ -4,10 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, MoreVertical, Search, Trash2 } from "lucide-react";
+import { Plus, MoreVertical, Search, Trash2, Menu } from "lucide-react";
 import Link from "next/link";
 import { ConversationType } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 /**
  * ChatSidebar
@@ -37,16 +45,20 @@ export default function ConversationSidebar({
 }) {
   const search = useSearchParams();
   const activeId = search.get("id");
+  const [open, setOpen] = useState(false);
 
-  return (
-    <aside className="flex flex-col w-72 h-full border-r shrink-0 bg-background/60 backdrop-blur-sm">
+  const SidebarContent = (opts?: { onAfterClick?: () => void }) => (
+    <>
       <div className="p-3">
         <div className="flex gap-2 items-center">
           <div className="text-lg font-semibold">Chats</div>
           <div className="flex gap-2 items-center ml-auto">
             <Button
               size="sm"
-              onClick={onNewConversation}
+              onClick={() => {
+                onNewConversation();
+                opts?.onAfterClick?.();
+              }}
               className="rounded-xl"
               variant="default"
             >
@@ -72,27 +84,72 @@ export default function ConversationSidebar({
               No chats found
             </li>
           )}
-          {conversations.map((conversation) => (
-            <li key={conversation.id}>
-              {hrefBase ? (
-                <ItemLink
-                  conversation={conversation}
-                  active={conversation.id === activeId}
-                  href={`${hrefBase}/${conversation.id}`}
-                />
-              ) : (
-                <ItemButton
-                  conversation={conversation}
-                  active={conversation.id === activeId}
-                  onClick={() => onSelect(conversation.id)}
-                  onDelete={() => onDeleteConversation(conversation.id)}
-                />
-              )}
-            </li>
-          ))}
+          {conversations.map((conversation) => {
+            const commonClick = () => {
+              onSelect(conversation.id);
+              opts?.onAfterClick?.();
+            };
+            return (
+              <li key={conversation.id}>
+                {hrefBase ? (
+                  <ItemLink
+                    conversation={conversation}
+                    active={conversation.id === activeId}
+                    href={`${hrefBase}/${conversation.id}`}
+                    onAfterClick={opts?.onAfterClick}
+                  />
+                ) : (
+                  <ItemButton
+                    conversation={conversation}
+                    active={conversation.id === activeId}
+                    onClick={commonClick}
+                    onDelete={() => onDeleteConversation(conversation.id)}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
       </ScrollArea>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile: hamburger + drawer (doesn't push layout) */}
+      <div className="md:hidden">
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl fixed top-16 left-3 z-40"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+
+          <SheetContent side="left" className="p-0 w-[85vw] max-w-sm">
+            <SheetHeader className="px-3 py-2">
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <SidebarContent onAfterClick={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      <aside
+        className="
+          hidden md:flex
+          flex-col h-full border-r shrink-0 bg-background/60 backdrop-blur-sm
+          basis-64 lg:basis-72 xl:basis-80
+          max-w-[22rem]
+        "
+      >
+        <SidebarContent />
+      </aside>
+    </>
   );
 }
 
@@ -100,14 +157,17 @@ function ItemLink({
   conversation,
   active,
   href,
+  onAfterClick,
 }: {
   conversation: ConversationType;
   active?: boolean;
   href: string;
+  onAfterClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onAfterClick}
       className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}`}
       title={conversation.title}
     >

@@ -142,7 +142,7 @@ export default function HomeLayout({
 
               {/* Desktop nav */}
 
-              <div className="flex gap-2 items-center py-1 px-2 rounded-xl ring-1 bg-primary/10 ring-primary/20">
+              <div className="hidden sm:flex gap-2 items-center py-1 px-2 rounded-xl ring-1 bg-primary/10 ring-primary/20">
                 {user && !loading && currentCourse ? (
                   <HoverCard openDelay={120} closeDelay={80}>
                     <HoverCardTrigger asChild>
@@ -225,6 +225,42 @@ export default function HomeLayout({
                   <NavItem href="/home/leaderboard" label="Leaderboard" />
                 </nav>
               </div>
+              {/* Mobile nav */}
+              <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-xl"
+                      aria-label="Open menu"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+
+                  <SheetContent side="left" className="p-4">
+                    <SheetHeader>
+                      <SheetTitle>Menu</SheetTitle>
+                    </SheetHeader>
+
+                    <nav className="mt-4 grid gap-2">
+                      <SheetClose asChild>
+                        <NavItem href="/home" label="Practice" />
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <NavItem
+                          href="/home/conversation"
+                          label="Conversation"
+                        />
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <NavItem href="/home/leaderboard" label="Leaderboard" />
+                      </SheetClose>
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              </div>
               <div className="flex gap-3 items-center">
                 {user && !loading && currentCourse ? (
                   <>
@@ -277,48 +313,9 @@ export default function HomeLayout({
               </div>
             </div>
           </div>
-
-          {/* Subtle divider */}
-          <Separator className="opacity-60" />
-
-          {/* Mobile nav */}
-          <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-xl"
-                  aria-label="Open menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-
-              <SheetContent side="left" className="p-4">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-
-                <nav className="mt-4 grid gap-2">
-                  <SheetClose asChild>
-                    <NavItem href="/home/practice" label="Practice" />
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <NavItem href="/home/conversation" label="Conversation" />
-                  </SheetClose>
-                  <SheetClose asChild>
-                    <NavItem href="/home/leaderboard" label="Leaderboard" />
-                  </SheetClose>
-                </nav>
-              </SheetContent>
-            </Sheet>
-          </div>
         </header>
 
-        <div className="container flex-1 py-6 px-4 w-full min-h-0">
-          {children}
-        </div>
+        <div className="flex-1 py-6 px-4 w-full min-h-0">{children}</div>
       </div>
     </RequireAuth>
   );

@@ -120,7 +120,7 @@ export default function HomePage() {
   const stage = stages[idx];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col w-full h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8">
       <div className="relative overflow-hidden rounded-xl border bg-card text-card-foreground p-4 sm:p-5 mb-4">
         <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
         <div className="pointer-events-none absolute -left-12 -bottom-12 h-28 w-28 rounded-full bg-accent/10 blur-2xl" />

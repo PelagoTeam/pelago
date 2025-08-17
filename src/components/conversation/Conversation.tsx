@@ -45,7 +45,8 @@ export default function Conversation({ id }: { id: string }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledOnce = useRef(false);
   const { profile } = useAuth();
 
   useEffect(() => {
@@ -64,9 +65,14 @@ export default function Conversation({ id }: { id: string }) {
   }, [id, profile]);
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+    const raf = requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: hasScrolledOnce.current ? "smooth" : "auto",
+        block: "end",
+      });
+      hasScrolledOnce.current = true;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [conversation?.messages.length, loading]);
 
   async function send() {
@@ -219,6 +225,7 @@ export default function Conversation({ id }: { id: string }) {
               }}
             />
           )}
+          <div ref={bottomRef} className="h-0" />
         </div>
 
         <Separator />

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthProfileContext";
 
 export const metadata: Metadata = {
-  title: "SEA-LION Language & Culture",
+  title: "Pelago",
   description:
     "Practice drills + AI conversations for Southeast Asian languages",
 };
@@ -14,8 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased w-[100svw] h-[100svh] text-foreground">
+    <html lang="en" className="h-full [scrollbar-gutter:stable]">
+      <body className="antialiased w-[100svw] h-[100svh] text-foreground overflow-x-clip">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

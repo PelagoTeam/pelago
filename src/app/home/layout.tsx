@@ -126,7 +126,7 @@ export default function HomeLayout({
   return (
     <RequireAuth>
       <div className="flex flex-col w-full h-full">
-        <header className="sticky top-0 z-40 px-5 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className=" border-2 sticky top-0 z-40 px-5 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex justify-between items-center px-4 h-16">
             <div className="flex gap-6 justify-between items-center w-full">
               <h1

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
@@ -52,6 +52,8 @@ export default function QuizPage() {
   const [round, setRound] = useState(1);
 
   const [checked, setChecked] = useState<null | "correct" | "wrong">(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledOnce = useRef(false);
 
   // -------- fetch questions --------
   useEffect(() => {
@@ -126,6 +128,17 @@ export default function QuizPage() {
       active = false;
     };
   }, [moduleId, supabase]);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: hasScrolledOnce.current ? "smooth" : "auto",
+        block: "end",
+      });
+      hasScrolledOnce.current = true;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [checked]);
 
   const current = roundQueue[index];
   const explanation =
@@ -330,6 +343,7 @@ export default function QuizPage() {
           </button>
         )}
       </div>
+      <div ref={bottomRef} />
     </div>
   );
 }

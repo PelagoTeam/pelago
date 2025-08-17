@@ -28,7 +28,7 @@ export default function HomePage() {
     if (!profile) {
       return;
     }
-    if (!stage_id) {
+    if (!stage_id || stage_id === "undefined") {
       const checkStageId = async () => {
         const { data: uc } = await supabase
           .from("user_courses")
@@ -113,7 +113,7 @@ export default function HomePage() {
       </div>
     );
   }
-  if (stages.length === 0) return <ComingSoon />;
+  if (stages.length === 0 || modules.length === 0) return <ComingSoon />;
 
   const totalModules = modules.length;
   const idx = stages.findIndex((s) => s.id === stage_id);

@@ -106,6 +106,9 @@ export default function HomePage() {
           <p className="mt-3 text-sm text-muted-foreground animate-pulse">
             Fetching your roadmap...
           </p>
+          <p className="mt-1 text-xs text-muted-foreground animate-pulse">
+            This might take a few seconds
+          </p>
         </div>
       </div>
     );

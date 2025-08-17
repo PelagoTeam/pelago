@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/contexts/AuthProfileContext";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
 /**
@@ -21,7 +20,6 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { user } = useAuth() || ({} as any);
   const searchParams = useSearchParams();
 
   const next = searchParams?.get("next") || "/home";
@@ -60,11 +58,6 @@ export default function Login() {
     }
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.refresh();
-  }
-
   return (
     <div className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/20">
       {/* Decorative background: simple radial glows only (safe in all setups) */}
@@ -96,28 +89,11 @@ export default function Login() {
               <CardHeader className="space-y-2">
                 <CardTitle className="text-center text-2xl">Sign in</CardTitle>
                 <p className="text-center text-sm text-muted-foreground">
-                  Don’t have an account?{" "}
+                  Don{"'"}t have an account?{" "}
                   <Link className="underline" href="/signup">
                     Create one
                   </Link>
                 </p>
-                {user && (
-                  <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                    You’re already signed in.
-                    <span className="mx-1">•</span>
-                    <Link href={next} className="underline">
-                      Continue
-                    </Link>
-                    <span className="mx-1">or</span>
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="underline"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                )}
               </CardHeader>
               <CardContent>
                 <form onSubmit={onSubmit} className="space-y-4">

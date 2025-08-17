@@ -71,15 +71,10 @@ export default function SignUpPage() {
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/20">
-      {/* Background glows */}
       <div className="pointer-events-none absolute -top-40 -left-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-secondary/30 blur-3xl" />
-
-      {/* Top brand, same as login */}
       <TopBrand />
-
       <div className="relative z-10 mx-auto max-w-6xl grid min-h-[100dvh] items-center md:grid-cols-2 gap-10 px-6 lg:px-8">
-        {/* Left side: hero copy */}
         <section className="hidden md:flex flex-col justify-center gap-8 p-6 lg:p-8">
           <h1 className="text-4xl/tight lg:text-5xl/tight font-semibold tracking-tight">
             Start your language journey <span aria-hidden>✨</span>
@@ -93,7 +88,6 @@ export default function SignUpPage() {
           </ul>
         </section>
 
-        {/* Right side: sign up card */}
         <section className="flex items-center justify-center p-6 lg:p-8">
           <div className="w-full max-w-md">
             <Card className="backdrop-blur bg-card/80 shadow-xl border-border/60">
@@ -220,18 +214,6 @@ export default function SignUpPage() {
                     <UserPlus className="h-4 w-4" />
                     {loading ? "Creating…" : "Create account"}
                   </Button>
-
-                  <p className="text-center text-xs text-muted-foreground">
-                    By continuing, you agree to our{" "}
-                    <Link href="/terms" className="underline">
-                      Terms
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="underline">
-                      Privacy
-                    </Link>
-                    .
-                  </p>
                 </form>
               </CardContent>
             </Card>

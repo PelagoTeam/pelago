@@ -234,7 +234,7 @@ export default function QuizPage() {
       } catch (e) {
         console.error("Failed to update module completion:", e);
       }
-      router.replace("/home");
+      router.back();
       setSaving(false);
     }
   }

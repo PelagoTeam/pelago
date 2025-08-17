@@ -14,9 +14,17 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from "@/components/ui/hover-card";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Menu } from "lucide-react";
 import CoursePickerPage from "@/components/SignUp/RegisterCourse";
 import RequireAuth from "@/components/RequireAuth";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 function NavItem({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
@@ -53,7 +61,7 @@ export default function HomeLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, profile, signOut, refresh } = useAuth();
+  const { user, profile, signOut, refresh, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [userCourses, setUserCourses] = useState<Course[]>([]);
@@ -86,7 +94,9 @@ export default function HomeLayout({
     fetchIcon();
   }, [profile, supabase]);
 
-  if (!profile && user) return <CoursePickerPage />;
+  if (authLoading) return null;
+
+  if (!profile && user && !authLoading) return <CoursePickerPage />;
 
   const initials = (
     profile?.username?.[0] ??
@@ -117,9 +127,9 @@ export default function HomeLayout({
 
   return (
     <RequireAuth>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full w-full">
         <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex justify-between items-center px-4 mx-auto max-w-screen-xl h-16">
+          <div className="flex justify-between items-center px-4 h-16">
             <div className="flex gap-6 justify-between items-center w-full">
               <h1
                 className={cn(
@@ -273,16 +283,40 @@ export default function HomeLayout({
 
           {/* Mobile nav */}
           <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
-            <div className="flex flex-wrap gap-2 p-2 rounded-xl bg-muted/30">
-              <NavItem href="/home/practice" label="Practice" />
-              <NavItem href="/home/conversation" label="Conversation" />
-              <NavItem href="/home/leaderboard" label="Leaderboard" />
-              <NavItem href="/home/profile" label="Profile" />
-            </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-xl"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent side="left" className="p-4">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+
+                <nav className="mt-4 grid gap-2">
+                  <SheetClose asChild>
+                    <NavItem href="/home/practice" label="Practice" />
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <NavItem href="/home/conversation" label="Conversation" />
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <NavItem href="/home/leaderboard" label="Leaderboard" />
+                  </SheetClose>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
 
-        <div className="container flex-1 py-6 px-4 mx-auto min-h-0">
+        <div className="container flex-1 py-6 px-4 w-full min-h-0">
           {children}
         </div>
       </div>

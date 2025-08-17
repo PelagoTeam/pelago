@@ -1,4 +1,3 @@
-// components/RequireAuth.tsx
 "use client";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthProfileContext";
@@ -10,8 +9,8 @@ export default function RequireAuth({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
-  console.log(user, loading);
   const router = useRouter();
+  console.log("user", user);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");

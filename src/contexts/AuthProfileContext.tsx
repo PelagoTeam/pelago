@@ -50,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setProfile(data ?? null);
-      console.log("loadProfile", data, loading);
     },
     [supabase],
   );
@@ -58,7 +57,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    // 1) Prime initial state
     (async () => {
       setLoading(true);
       const {
@@ -71,10 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const u = session?.user ?? null;
       setUser(u);
       await loadProfile(u);
-      if (!cancelled) setLoading(false); // always end initial load
+      if (!cancelled) setLoading(false);
     })();
 
-    // 2) Subscribe for future changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
@@ -82,14 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
         const u = session?.user ?? null;
         setUser(u);
-
-        // Optional: show a spinner only for explicit transitions
-        // setLoading(event === "SIGNED_IN" || event === "SIGNED_OUT");
-
         await loadProfile(u);
-
-        // if you enabled the spinner above, you can turn it off here
-        // if (event === "SIGNED_IN" || event === "SIGNED_OUT") setLoading(false);
       },
     );
 

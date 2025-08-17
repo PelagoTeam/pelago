@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
 type Leaderboard = {
+  id: string;
   username: string;
   total_points: number;
 };
@@ -28,7 +29,7 @@ export default function LeaderboardPage() {
       setLoading(true);
       const { data } = await supabase
         .from("Users")
-        .select("username, total_points")
+        .select("id, username, total_points")
         .eq("current_course", profile?.current_course)
         .order("total_points", { ascending: false })
         .limit(10);
@@ -69,24 +70,14 @@ export default function LeaderboardPage() {
       <CardContent className="space-y-6">
         {/* Podium (centered #1, flanked by #2 and #3) */}
         <div className="grid grid-cols-3 gap-4 items-end">
-          <PodiumTile
-            rank={2}
-            user={top2?.username}
-            points={top2?.total_points}
-            subdued
-          />
+          <PodiumTile rank={2} user={top2} points={top2?.total_points} />
           <PodiumTile
             rank={1}
-            user={top1?.username}
+            user={top1}
             points={top1?.total_points}
             highlight
           />
-          <PodiumTile
-            rank={3}
-            user={top3?.username}
-            points={top3?.total_points}
-            subdued
-          />
+          <PodiumTile rank={3} user={top3} points={top3?.total_points} />
         </div>
 
         {/* Table for the rest */}
@@ -144,7 +135,7 @@ export default function LeaderboardPage() {
 
                 return (
                   <TableRow
-                    key={row.username}
+                    key={row.id}
                     className="transition-colors even:bg-muted/40 hover:bg-muted/60"
                   >
                     <TableCell className="font-semibold">
@@ -154,9 +145,9 @@ export default function LeaderboardPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <AvatarCircle name={row.username} />
+                        <AvatarCircle name={row.username || "Anonymous"} />
                         <span className="truncate max-w-[18rem]">
-                          {row.username}
+                          {row.username || "Anonymous"}
                         </span>
                       </div>
                     </TableCell>
@@ -197,13 +188,11 @@ function PodiumTile({
   user,
   points,
   highlight,
-  subdued,
 }: {
   rank: 1 | 2 | 3;
-  user?: string;
+  user?: Leaderboard;
   points?: number;
   highlight?: boolean;
-  subdued?: boolean;
 }) {
   const medal = rank === 1 ? "🥇" : rank === 2 ? "🥈" : "🥉";
   const ring =
@@ -229,11 +218,11 @@ function PodiumTile({
       <div className="flex flex-col items-center gap-2">
         <span className="text-2xl">{medal}</span>
         <div className={`rounded-full ring-2 ${ring}`}>
-          <AvatarCircle name={user} />
+          <AvatarCircle name={user?.username ?? "Anonymous"} />
         </div>
         <div className="text-center">
           <div className="font-medium max-w-[12rem] truncate">
-            {user ?? "—"}
+            {user?.username ?? "Anonymous"}
           </div>
           <div className="text-xs text-muted-foreground">
             {typeof points === "number" ? `${points} pts` : "—"}

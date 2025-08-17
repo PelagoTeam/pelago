@@ -25,7 +25,7 @@ type Course = {
 
 export default function CoursePickerPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,6 @@ export default function CoursePickerPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // 1) Fetch courses
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -76,6 +75,7 @@ export default function CoursePickerPage() {
         .from("Users")
         .upsert({
           id: user.id,
+          username: user.user_metadata.username,
           total_points: 0,
           current_course: selectedId,
         })
@@ -83,8 +83,6 @@ export default function CoursePickerPage() {
 
       if (upErr) throw upErr;
 
-      // optional: ensure user_courses row exists & starts at {module:0, stage:0}
-      // (comment out if you don’t want this side-effect)
       const { error: ucErr } = await supabase.from("user_courses").upsert({
         user_id: user.id,
         course_id: selectedId,
@@ -93,8 +91,9 @@ export default function CoursePickerPage() {
       });
 
       if (ucErr) throw ucErr;
-
-      router.push("/home");
+      console.log("saved");
+      await refresh();
+      router.replace("/home");
     } catch (e: any) {
       setError(e?.message ?? "Failed to save course selection.");
     } finally {

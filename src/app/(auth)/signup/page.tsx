@@ -58,7 +58,7 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: name } },
+        options: { data: { username: name } },
       });
       if (error) throw error;
       router.replace("/home");

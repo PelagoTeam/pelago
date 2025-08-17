@@ -25,8 +25,11 @@ export default function HomePage() {
   const stage_id = search.get("stage");
 
   useEffect(() => {
-    const checkStageId = async () => {
-      if (!stage_id && profile) {
+    if (!profile) {
+      return;
+    }
+    if (!stage_id) {
+      const checkStageId = async () => {
         const { data: uc } = await supabase
           .from("user_courses")
           .select("stage")
@@ -40,13 +43,10 @@ export default function HomePage() {
           .eq("stage_number", progress.stage)
           .single();
         router.replace(`/home?stage=${stage?.id}`);
-      }
-    };
-    checkStageId();
-  }, [stage_id, router, profile, supabase]);
-
-  useEffect(() => {
-    if (!profile || !stage_id) return;
+      };
+      checkStageId();
+      return;
+    }
     (async () => {
       setLoading(true);
       const courseId = profile.current_course;
@@ -96,7 +96,7 @@ export default function HomePage() {
       setModules(modules);
       setLoading(false);
     })();
-  }, [profile, supabase, stage_id]);
+  }, [profile, supabase, stage_id, router]);
 
   if (loading) {
     return (

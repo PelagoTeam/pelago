@@ -8,7 +8,7 @@ import {
   useEffect,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { Profile } from "@/lib/types";
 
 type Ctx = {
@@ -77,11 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
       const u = session?.user ?? null;
       setUser(u);
-      await loadProfile(u);
+      loadProfile(u);
     });
 
     return () => {

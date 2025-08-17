@@ -10,8 +10,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, LogOut, Mail, Save, User2, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  LogOut,
+  Mail,
+  Save,
+  User2,
+  RotateCcw,
+  Trophy,
+  Calendar,
+  BookOpen,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type UserMeta = {
+  created_at: string | null;
+  total_points: number | null;
+};
 
 export default function ProfilePage() {
   const { user, profile, loading: authLoading, signOut, refresh } = useAuth();
@@ -24,6 +39,58 @@ export default function ProfilePage() {
     type: "ok" | "err";
     msg: string;
   }>(null);
+
+  const [meta, setMeta] = useState<UserMeta>({
+    created_at: null,
+    total_points: null,
+  });
+  const [metaLoading, setMetaLoading] = useState(true);
+
+  const [coursesCount, setCoursesCount] = useState<number>(0);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+
+  useEffect(() => {
+    setUsername(profile?.username ?? "");
+  }, [profile?.username]);
+
+  // Fetch created_at & total_points
+  useEffect(() => {
+    const fetchMeta = async () => {
+      if (!user) return;
+      setMetaLoading(true);
+      const { data, error } = await supabase
+        .from("Users")
+        .select("created_at, total_points")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && data) {
+        setMeta({
+          created_at: data.created_at ?? null,
+          total_points: (data.total_points as number | null) ?? 0,
+        });
+      }
+      setMetaLoading(false);
+    };
+    fetchMeta();
+  }, [user, supabase]);
+
+  // Fetch courses count
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (!user) return;
+      setCoursesLoading(true);
+
+      const { count, error } = await supabase
+        .from("user_courses")
+        .select("course_id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if (!error && count !== null) setCoursesCount(count);
+      setCoursesLoading(false);
+    };
+    fetchCourses();
+  }, [user, supabase]);
 
   const dirty = (profile?.username ?? "") !== username;
 
@@ -42,15 +109,13 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from("Users")
-        .update({
-          username: trimmed.length ? trimmed : null,
-        })
+        .update({ username: trimmed.length ? trimmed : null })
         .eq("id", user!.id);
 
       if (error) throw error;
 
       setStatus({ type: "ok", msg: "Profile saved." });
-      await refresh(); // re-pull profile into context
+      await refresh();
     } catch (e: any) {
       console.error("[Profile] save error:", e?.message ?? e);
       setStatus({ type: "err", msg: "Could not save changes." });
@@ -64,7 +129,6 @@ export default function ProfilePage() {
     setStatus(null);
   }
 
-  // skeletons / guards
   if (authLoading) {
     return (
       <div className="max-w-2xl space-y-6">
@@ -72,21 +136,7 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Profile</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-muted animate-pulse" />
-              <div className="space-y-2 w-full">
-                <div className="h-4 w-1/3 bg-muted rounded animate-pulse" />
-                <div className="h-4 w-1/4 bg-muted rounded animate-pulse" />
-              </div>
-            </div>
-            <div className="h-9 w-full bg-muted rounded animate-pulse" />
-            <div className="h-9 w-full bg-muted rounded animate-pulse" />
-            <div className="flex gap-2">
-              <div className="h-9 w-28 bg-muted rounded animate-pulse" />
-              <div className="h-9 w-28 bg-muted rounded animate-pulse" />
-            </div>
-          </CardContent>
+          <CardContent>Loading…</CardContent>
         </Card>
       </div>
     );
@@ -100,13 +150,11 @@ export default function ProfilePage() {
     );
   }
 
-  // helper: initial from email
   const initials = (
     user.email?.trim()[0] ??
     user.user_metadata?.name?.trim()[0] ??
     "U"
   ).toUpperCase();
-
   const emailVerified = Boolean(user.email_confirmed_at);
 
   return (
@@ -117,7 +165,7 @@ export default function ProfilePage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Header row */}
+          {/* Header */}
           <div className="flex items-center gap-4">
             <div className="relative grid place-items-center h-16 w-16 rounded-full bg-primary/10 text-primary">
               <span className="text-xl font-semibold">{initials}</span>
@@ -125,6 +173,7 @@ export default function ProfilePage() {
                 <User2 className="h-4 w-4" />
               </span>
             </div>
+
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
@@ -133,13 +182,34 @@ export default function ProfilePage() {
                   variant={emailVerified ? "secondary" : "outline"}
                   className={cn(
                     "ml-2",
-                    emailVerified ? "border-transparent" : ""
+                    emailVerified ? "border-transparent" : "",
                   )}
                 >
                   {emailVerified ? "Verified" : "Unverified"}
                 </Badge>
               </div>
+
+              {/* Quick meta */}
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <Trophy className="h-3.5 w-3.5" />
+                  {metaLoading ? "…" : `${meta.total_points ?? 0} pts`}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {metaLoading || !meta.created_at
+                    ? "…"
+                    : new Date(meta.created_at).toLocaleDateString()}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  {coursesLoading
+                    ? "…"
+                    : `${coursesCount} course${coursesCount === 1 ? "" : "s"}`}
+                </span>
+              </div>
             </div>
+
             <Button
               variant="outline"
               size="sm"
@@ -153,6 +223,33 @@ export default function ProfilePage() {
             </Button>
           </div>
 
+          {/* Stats row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Total points</div>
+              <div className="text-lg font-semibold">
+                {metaLoading ? "…" : (meta.total_points ?? 0)}
+              </div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">Date joined</div>
+              <div className="text-lg font-semibold">
+                {metaLoading || !meta.created_at
+                  ? "…"
+                  : new Date(meta.created_at).toLocaleDateString()}
+              </div>
+            </div>
+            <div className="rounded-md border p-3">
+              <div className="text-xs text-muted-foreground">
+                Courses enrolled
+              </div>
+              <div className="text-lg font-semibold">
+                {coursesLoading ? "…" : coursesCount}
+              </div>
+            </div>
+          </div>
+
+          {/* Username editor */}
           <div className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="username" className="text-sm">
@@ -178,7 +275,7 @@ export default function ProfilePage() {
                 "rounded-md border px-3 py-2 text-sm",
                 status.type === "ok"
                   ? "bg-secondary text-secondary-foreground border-transparent"
-                  : "bg-destructive/10 text-destructive border-destructive/30"
+                  : "bg-destructive/10 text-destructive border-destructive/30",
               )}
             >
               {status.msg}

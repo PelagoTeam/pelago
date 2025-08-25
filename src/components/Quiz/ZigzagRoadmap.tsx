@@ -11,7 +11,7 @@ type Module = {
   module_id: string;
   title?: string;
   stage_number: number;
-  order: number;
+  module_number: number;
 };
 
 export default function ZigZagRoadmap({
@@ -20,7 +20,7 @@ export default function ZigZagRoadmap({
   totalModules,
 }: {
   modules: Module[];
-  progress: { module: number; stage: number };
+  progress: { module_number: number; stage_number: number };
   totalModules: number;
 }) {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function ZigZagRoadmap({
     () =>
       [...modules].sort((a, b) =>
         a.stage_number === b.stage_number
-          ? a.order - b.order
+          ? a.module_number - b.module_number
           : a.stage_number - b.stage_number,
       ),
     [modules],
@@ -42,23 +42,23 @@ export default function ZigZagRoadmap({
 
   type State = "done" | "current" | "locked";
   const stateForModule = (m: Module): State => {
-    if (m.stage_number < progress.stage) return "done";
-    if (m.stage_number > progress.stage) return "locked";
+    if (m.stage_number < progress.stage_number) return "done";
+    if (m.stage_number > progress.stage_number) return "locked";
     // same stage
-    if (m.order < progress.module) return "done";
-    if (m.order === progress.module) return "current";
+    if (m.module_number < progress.module_number) return "done";
+    if (m.module_number === progress.module_number) return "current";
     return "locked";
   };
 
   // 3) Stage-aware edge states (based on PREVIOUS node in the path)
   const isEdgeDone = (prev: Module) => {
-    if (prev.stage_number < progress.stage) return true;
-    if (prev.stage_number > progress.stage) return false;
-    return prev.order < progress.module;
+    if (prev.stage_number < progress.stage_number) return true;
+    if (prev.stage_number > progress.stage_number) return false;
+    return prev.module_number < progress.module_number;
   };
   const isEdgeCurrent = (prev: Module) => {
-    if (prev.stage_number !== progress.stage) return false;
-    return prev.order === progress.module;
+    if (prev.stage_number !== progress.stage_number) return false;
+    return prev.module_number === progress.module_number;
   };
 
   // 4) Compute zigzag node positions (centered)
@@ -82,10 +82,11 @@ export default function ZigZagRoadmap({
         <h2 className="text-xl font-semibold">Course Roadmap</h2>
         <div className="flex items-center gap-3">
           <Badge variant="secondary">
-            {Math.min(progress.module, totalModules)}/{totalModules} completed
+            {Math.min(progress.module_number, totalModules)}/{totalModules}{" "}
+            completed
           </Badge>
           <Progress
-            value={(progress.module / Math.max(1, totalModules)) * 100}
+            value={(progress.module_number / Math.max(1, totalModules)) * 100}
             className="w-40"
           />
         </div>
@@ -162,9 +163,11 @@ export default function ZigZagRoadmap({
                 transform: `translate(-50%, 0)`,
               }}
               aria-label={
-                m.title ?? `Stage ${m.stage_number} • Module ${m.order}`
+                m.title ?? `Stage ${m.stage_number} • Module ${m.module_number}`
               }
-              title={m.title ?? `Stage ${m.stage_number} • Module ${m.order}`}
+              title={
+                m.title ?? `Stage ${m.stage_number} • Module ${m.module_number}`
+              }
             >
               {st === "current" && (
                 <span className="absolute -top-10 rounded-md bg-secondary px-3 py-2 text-xs font-semibold text-secondary-foreground border-2 border-primary/40">

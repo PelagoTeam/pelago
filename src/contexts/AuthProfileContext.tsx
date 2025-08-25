@@ -40,9 +40,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const { data, error } = await supabase
-        .from("Users")
-        .select("id, username, current_course")
-        .eq("id", u.id)
+        .from("users")
+        .select("user_id, username, current_course")
+        .eq("user_id", u.id)
         .maybeSingle<Profile>();
       if (error) {
         console.error("[Auth] loadProfile error:", error);

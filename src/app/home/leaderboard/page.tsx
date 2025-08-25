@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
 type Leaderboard = {
-  id: string;
+  user_id: string;
   username: string;
   total_points: number;
 };
@@ -28,8 +28,8 @@ export default function LeaderboardPage() {
     const fetchLeaderboard = async () => {
       setLoading(true);
       const { data } = await supabase
-        .from("Users")
-        .select("id, username, total_points")
+        .from("users")
+        .select("user_id, username, total_points")
         .eq("current_course", profile?.current_course)
         .order("total_points", { ascending: false })
         .limit(10);
@@ -136,7 +136,7 @@ export default function LeaderboardPage() {
 
                   return (
                     <TableRow
-                      key={row.id}
+                      key={row.user_id}
                       className="transition-colors even:bg-muted/40 hover:bg-muted/60"
                     >
                       <TableCell className="font-semibold">

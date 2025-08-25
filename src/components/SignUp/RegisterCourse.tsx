@@ -40,7 +40,7 @@ export default function CoursePickerPage() {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from("Courses")
+          .from("courses")
           .select("course_id, language, icon_url")
           .order("language", { ascending: true });
 
@@ -76,14 +76,14 @@ export default function CoursePickerPage() {
     try {
       console.log(selectedId);
       const { error: upErr } = await supabase
-        .from("Users")
+        .from("users")
         .upsert({
-          id: user.id,
+          user_id: user.id,
           username: user.user_metadata.username,
           total_points: 0,
           current_course: selectedId,
         })
-        .eq("id", user.id);
+        .eq("user_id", user.id);
 
       if (upErr) throw upErr;
 

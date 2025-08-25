@@ -1,52 +1,46 @@
 "use client";
 
+import { Compose } from "@/lib/types";
 import { useMemo, useState } from "react";
-
-export type ComposeToken = { id: string; text: string };
-export type ComposeData = {
-  tokens: ComposeToken[];
-  answer_order: string[];
-  explanation: string;
-};
-
-type Props = {
-  prompt: string;
-  data: ComposeData;
-  locked?: boolean;
-  onSubmit: (result: { correct: boolean }) => void;
-};
 
 export default function ComposeQuiz({
   prompt,
   data,
   locked = false,
   onSubmit,
-}: Props) {
+}: {
+  prompt: string;
+  data: Compose;
+  locked?: boolean;
+  onSubmit: (result: { correct: boolean }) => void;
+}) {
   const [answer, setAnswer] = useState<string[]>([]); // token ids in clicked order
 
   const tokenMap = useMemo(() => {
     const m = new Map<string, string>();
-    data.tokens.forEach((t) => m.set(t.id, t.text));
+    data.tokens.forEach((t) => m.set(t.token_id, t.text));
     return m;
   }, [data.tokens]);
 
-  function toggleToken(id: string) {
+  function toggleToken(token_id: string) {
     if (locked) return;
     setAnswer((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(token_id)
+        ? prev.filter((x) => x !== token_id)
+        : [...prev, token_id],
     );
   }
 
-  function removeToken(id: string) {
+  function removeToken(token_id: string) {
     if (locked) return;
-    setAnswer((a) => a.filter((x) => x !== id));
+    setAnswer((a) => a.filter((x) => x !== token_id));
   }
 
   function handleSubmit() {
     if (locked) return;
     const correct =
       answer.length === data.answer_order.length &&
-      data.answer_order.every((id, i) => id === answer[i]);
+      data.answer_order.every((token_id, i) => token_id === answer[i]);
     onSubmit({ correct });
   }
 
@@ -61,13 +55,13 @@ export default function ComposeQuiz({
       <div className="mb-4">
         <div className={`flex flex-wrap gap-2 ${locked ? "opacity-60" : ""}`}>
           {data.tokens.map((t) => {
-            const idx = answer.indexOf(t.id);
+            const idx = answer.indexOf(t.token_id);
             const selected = idx !== -1;
             return (
               <button
-                key={t.id}
+                key={t.token_id}
                 type="button"
-                onClick={() => toggleToken(t.id)}
+                onClick={() => toggleToken(t.token_id)}
                 disabled={locked}
                 className={`relative rounded-full border px-3 py-1 text-md transition
                   ${
@@ -88,18 +82,18 @@ export default function ComposeQuiz({
       <div>
         <p className="text-sm text-gray-600 mb-2">Your answer</p>
         <div className="flex flex-wrap items-center gap-2 border-b-2 pb-2">
-          {answer.map((id) => (
+          {answer.map((token_id) => (
             <button
-              key={id}
+              key={token_id}
               type="button"
-              onClick={() => removeToken(id)}
+              onClick={() => removeToken(token_id)}
               disabled={locked}
               className={`rounded-full border px-3 py-1 text-md
                 ${locked ? "opacity-60 cursor-not-allowed" : "hover:bg-gray-50"}
               `}
               title="Remove"
             >
-              {tokenMap.get(id)}
+              {tokenMap.get(token_id)}
             </button>
           ))}
         </div>

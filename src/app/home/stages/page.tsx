@@ -31,13 +31,13 @@ export default function StagePage() {
           await Promise.all([
             supabase
               .from("stages")
-              .select("id, title, stage_number, course_id")
+              .select("stage_id, title, stage_number, course_id")
               .eq("course_id", profile.current_course)
               .order("stage_number", { ascending: true }),
             supabase
               .from("user_courses")
               .select("stage")
-              .eq("user_id", profile.id)
+              .eq("user_id", profile.user_id)
               .eq("course_id", profile.current_course)
               .single(),
           ]);
@@ -105,7 +105,7 @@ export default function StagePage() {
 
           return (
             <Card
-              key={stage.id}
+              key={stage.stage_id}
               className={cn(
                 "relative overflow-hidden border transition",
                 isDone && "bg-secondary/60",
@@ -156,7 +156,7 @@ export default function StagePage() {
                   size="sm"
                   variant={isLocked ? "outline" : "default"}
                   disabled={isLocked}
-                  onClick={() => goToStage(stage.id)}
+                  onClick={() => goToStage(stage.stage_id)}
                 >
                   {isDone ? "Review" : isCurrent ? "Continue" : "Locked"}
                 </Button>

@@ -4,33 +4,35 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
-import MCQQuiz, { MCQData } from "@/components/Quiz/MCQQuiz";
-import ComposeQuiz, { ComposeData } from "@/components/Quiz/ComposeQuiz";
+import MCQQuiz from "@/components/Quiz/MCQQuiz";
+import ComposeQuiz from "@/components/Quiz/ComposeQuiz";
+
 import { Button } from "@/components/ui/button";
+import { Compose, MCQ } from "@/lib/types";
 
 type QuestionRow = {
   question_id: string;
   module_id: string;
   position: number;
-  type: "mcq" | "compose";
+  type: "MCQ" | "Compose";
   prompt: string | null;
-  payload: MCQData | ComposeData;
+  payload: MCQ | Compose;
 };
 
 type MCQQuestion = {
   question_id: string;
   position: number;
-  type: "mcq";
+  type: "MCQ";
   prompt: string;
-  payload: MCQData;
+  payload: MCQ;
 };
 
 type ComposeQuestion = {
   question_id: string;
   position: number;
-  type: "compose";
+  type: "Compose";
   prompt: string;
-  payload: ComposeData;
+  payload: Compose;
 };
 
 type Question = MCQQuestion | ComposeQuestion;
@@ -79,20 +81,20 @@ export default function QuizPage() {
         const normalized: Question[] = (data ?? [])
           .map((r: QuestionRow) => {
             const prompt = (r.prompt ?? "").toString();
-            if (r.type === "mcq") {
+            if (r.type === "MCQ") {
               return {
                 question_id: r.question_id,
                 position: r.position,
-                type: "mcq",
+                type: "MCQ",
                 prompt,
                 payload: r.payload,
               };
             }
-            if (r.type === "compose") {
+            if (r.type === "Compose") {
               return {
                 question_id: r.question_id,
                 position: r.position,
-                type: "compose",
+                type: "Compose",
                 prompt,
                 payload: r.payload,
               };
@@ -142,9 +144,9 @@ export default function QuizPage() {
 
   const current = roundQueue[index];
   const explanation =
-    current?.type === "mcq"
+    current?.type === "MCQ"
       ? current.payload.explanation
-      : current?.type === "compose"
+      : current?.type === "Compose"
         ? current.payload.explanation
         : null;
 
@@ -183,11 +185,11 @@ export default function QuizPage() {
 
   async function completeAndExit() {
     try {
-      if (profile?.id) {
+      if (profile?.user_id) {
         const { data: p, error: selErr } = await supabase
           .from("user_courses")
           .select("stage, module")
-          .eq("user_id", profile.id)
+          .eq("user_id", profile.user_id)
           .eq("course_id", profile.current_course)
           .single();
         if (selErr) throw selErr;
@@ -196,13 +198,13 @@ export default function QuizPage() {
 
         const { data: s, error: stageErr } = await supabase
           .from("stages")
-          .select("id")
+          .select("stage_id")
           .eq("course_id", profile.current_course)
           .eq("stage_number", currentStage)
           .single();
         if (stageErr) throw stageErr;
 
-        const stage_id = (s?.id ?? 0) as number;
+        const stage_id = (s?.stage_id ?? 0) as number;
 
         console.log("currentModule", currentModule);
         console.log("currentStage", currentStage);
@@ -219,7 +221,7 @@ export default function QuizPage() {
           const { error: updErr } = await supabase
             .from("user_courses")
             .update({ module: currentModule + 1 })
-            .eq("user_id", profile.id)
+            .eq("user_id", profile.user_id)
             .eq("course_id", profile.current_course);
           if (updErr) throw updErr;
         } else {
@@ -239,10 +241,10 @@ export default function QuizPage() {
       console.error("Failed to update progress:", e);
     } finally {
       try {
-        console.log(profile?.id);
+        console.log(profile?.user_id);
         const { error: updErr } = await supabase.rpc("increment_points", {
           x: 50,
-          row_id: profile?.id,
+          row_id: profile?.user_id,
         });
         if (updErr) throw updErr;
       } catch (e) {
@@ -296,7 +298,7 @@ export default function QuizPage() {
       </div>
 
       <div key={`${current.question_id}-${round}-${index}`}>
-        {current.type === "mcq" ? (
+        {current.type === "MCQ" ? (
           <MCQQuiz
             prompt={current.prompt}
             data={current.payload}

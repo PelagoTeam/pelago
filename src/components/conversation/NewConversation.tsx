@@ -14,7 +14,7 @@ export default function NewConversation({
 }: {
   themes: Theme[];
   loading: boolean;
-  onCreated: (id: string) => void;
+  onCreated: (conversation_id: string) => void;
 }) {
   const [themeId, setThemeId] = useState<string | undefined>();
   const [creating, setCreating] = useState(false);
@@ -45,7 +45,7 @@ export default function NewConversation({
 
       const data = await res.json();
 
-      onCreated(data.id);
+      onCreated(data.conversation_id);
     } catch (err) {
       console.error("error generating text", err);
     } finally {
@@ -80,13 +80,13 @@ export default function NewConversation({
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
               >
                 {themes.map((t) => {
-                  const active = t.id === themeId;
+                  const active = t.theme_id === themeId;
                   return (
                     <button
-                      key={t.id}
+                      key={t.theme_id}
                       role="radio"
                       aria-checked={active}
-                      onClick={() => setThemeId(t.id)}
+                      onClick={() => setThemeId(t.theme_id)}
                       className={cn(
                         "group relative w-full rounded-2xl border bg-card p-4 text-left transition-all",
                         "hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring/40",

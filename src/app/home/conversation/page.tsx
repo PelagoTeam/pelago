@@ -28,8 +28,8 @@ export default function ConversationPage() {
 
     const { data, error } = await supabase
       .from("conversations")
-      .select("id, title")
-      .eq("user_id", profile.id);
+      .select("conversation_id, title")
+      .eq("user_id", profile.user_id);
 
     if (!error && data) {
       setConversations(data);
@@ -41,7 +41,7 @@ export default function ConversationPage() {
       setLoadingThemes(true);
       const { data, error } = await supabase
         .from("themes")
-        .select("id, title, language, starter_prompt, difficulty")
+        .select("theme_id, title, language, prompt, difficulty")
         .order("title");
 
       console.log("themes", data);
@@ -52,23 +52,27 @@ export default function ConversationPage() {
     loadThemes();
   }, [loadConversations, supabase, conversationId]);
 
-  function handleSelectConversation(id: string) {
-    router.push(`/home/conversation?id=${id}`);
+  function handleSelectConversation(conversation_id: string) {
+    router.push(`/home/conversation?id=${conversation_id}`);
   }
 
-  const handleDeleteConversation = async (id: string) => {
+  const handleDeleteConversation = async (conversation_id: string) => {
     const prev = conversations;
-    setConversations((x) => x.filter((c) => c.id !== id));
+    setConversations((x) =>
+      x.filter((c) => c.conversation_id !== conversation_id),
+    );
     const { error } = await supabase
       .from("conversations")
       .delete()
-      .eq("id", id);
+      .eq("conversation_id", conversation_id);
 
     if (error) setConversations(prev);
-    else if (conversationId === id) {
-      const next = prev.find((c) => c.id !== id);
+    else if (conversationId === conversation_id) {
+      const next = prev.find((c) => c.conversation_id !== conversation_id);
       router.push(
-        next ? `/home/conversation?id=${next.id}` : "/home/conversation",
+        next
+          ? `/home/conversation?id=${next.conversation_id}`
+          : "/home/conversation",
       );
     }
   };
@@ -87,7 +91,7 @@ export default function ConversationPage() {
       />
       <div className="flex-1 min-h-0">
         {conversationId ? (
-          <Conversation id={conversationId} />
+          <Conversation conversation_id={conversationId} />
         ) : (
           <NewConversation
             themes={themes}

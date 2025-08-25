@@ -75,7 +75,7 @@ export default function HomeLayout({
         setLoading(true);
         try {
           const { data, error } = await supabase
-            .from("Courses")
+            .from("courses")
             .select("icon_url, language, course_id");
           if (error) throw error;
           if (data) {
@@ -107,9 +107,9 @@ export default function HomeLayout({
     try {
       setSwitchingId(courseId);
       const { error } = await supabase
-        .from("Users")
+        .from("users")
         .update({ current_course: courseId })
-        .eq("id", profile.id);
+        .eq("user_id", profile.user_id);
 
       if (error) throw error;
       const next = userCourses.find((c) => c.course_id === courseId);

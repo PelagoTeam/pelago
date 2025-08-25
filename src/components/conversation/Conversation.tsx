@@ -26,7 +26,7 @@ type Conversation = {
 type Message = UserMessage | AssistantMessage;
 
 type UserMessage = {
-  id: string;
+  message_id: string;
   role: "user";
   pending: boolean;
   content: string;
@@ -34,13 +34,17 @@ type UserMessage = {
 };
 
 type AssistantMessage = {
-  id: string;
+  message_id: string;
   role: "assistant";
   pending: boolean;
   content: string;
 };
 
-export default function Conversation({ id }: { id: string }) {
+export default function Conversation({
+  conversation_id,
+}: {
+  conversation_id: string;
+}) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,7 +58,10 @@ export default function Conversation({ id }: { id: string }) {
     (async () => {
       if (!running && profile) {
         running = true;
-        const conversation = await getConversation(id, profile.id);
+        const conversation = await getConversation(
+          conversation_id,
+          profile.user_id,
+        );
         console.log("conversation", conversation);
         setConversation(conversation);
       }
@@ -62,7 +69,7 @@ export default function Conversation({ id }: { id: string }) {
     return () => {
       running = true;
     };
-  }, [id, profile]);
+  }, [conversation_id, profile]);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
@@ -91,7 +98,7 @@ export default function Conversation({ id }: { id: string }) {
 
     // Optimistic state
     const optimisticUserMsg: Message = {
-      id: "PLACEHOLDER_ID",
+      message_id: "PLACEHOLDER_ID",
       role: "user",
       pending: true,
       content: input,
@@ -116,7 +123,7 @@ export default function Conversation({ id }: { id: string }) {
           theme: optimisticConversation.topic,
           username: profile?.username,
           history: optimisticConversation.messages,
-          conversation_id: id,
+          conversation_id: conversation_id,
         }),
       });
 
@@ -132,14 +139,14 @@ export default function Conversation({ id }: { id: string }) {
 
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
-      optimisticUserMsg.id = data.messageIds.user;
+      optimisticUserMsg.message_id = data.messageIds.user;
 
       const newConversation: Conversation = {
         ...optimisticConversation,
         messages: [
           ...optimisticConversation.messages,
           {
-            id: data.messageIds.assistant,
+            message_id: data.messageIds.assistant,
             role: "assistant",
             pending: false,
             content:
@@ -213,12 +220,12 @@ export default function Conversation({ id }: { id: string }) {
       <CardContent className="flex flex-col flex-1 gap-3 min-h-0">
         <div className="flex overflow-y-scroll flex-col flex-1 gap-3 min-h-0 no-scrollbar">
           {conversation.messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble key={message.message_id} message={message} />
           ))}
           {loading && (
             <AssistantMessageBubble
               message={{
-                id: "XXX",
+                message_id: "XXX",
                 role: "assistant",
                 content: "...",
                 pending: true,
@@ -294,21 +301,21 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
 }
 
 async function getConversation(
-  id: string,
+  conversation_id: string,
   user_id: string,
 ): Promise<Conversation> {
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("id, role, content, remarks")
-    .eq("conversation_id", id)
+    .select("message_id, role, content, remarks")
+    .eq("conversation_id", conversation_id)
     .eq("user_id", user_id)
     .order("created_at", { ascending: true });
   if (error) throw error;
   const { data: conversation, error: e } = await supabase
     .from("conversations")
     .select("title, difficulty, language")
-    .eq("id", id)
+    .eq("conversation_id", conversation_id)
     .single();
   if (e) throw e;
   return {
@@ -316,7 +323,7 @@ async function getConversation(
     difficulty: conversation.difficulty,
     language: conversation.language,
     messages: messages.map((message) => ({
-      id: message.id,
+      message_id: message.message_id,
       role: message.role,
       content: message.content,
       remarks: message.remarks,

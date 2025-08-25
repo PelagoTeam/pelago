@@ -59,9 +59,9 @@ export default function ProfilePage() {
       if (!user) return;
       setMetaLoading(true);
       const { data, error } = await supabase
-        .from("Users")
+        .from("users")
         .select("created_at, total_points")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .single();
 
       if (!error && data) {
@@ -108,9 +108,9 @@ export default function ProfilePage() {
       }
 
       const { error } = await supabase
-        .from("Users")
+        .from("users")
         .update({ username: trimmed.length ? trimmed : null })
-        .eq("id", user!.id);
+        .eq("user_id", user!.id);
 
       if (error) throw error;
 

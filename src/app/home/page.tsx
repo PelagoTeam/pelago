@@ -17,7 +17,10 @@ export default function HomePage() {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Module[]>([]);
-  const [userProgress, setUserProgress] = useState({ module: 0, stage: 0 });
+  const [userProgress, setUserProgress] = useState({
+    module_number: 0,
+    stage_number: 0,
+  });
   const [stages, setStages] = useState<Stages[]>([]);
   const router = useRouter();
 
@@ -32,17 +35,17 @@ export default function HomePage() {
       const checkStageId = async () => {
         const { data: uc } = await supabase
           .from("user_courses")
-          .select("stage")
+          .select("stage_number")
           .eq("course_id", profile.current_course)
           .single();
-        const progress = uc ?? { stage: 0 };
+        const progress = uc ?? { stage_number: 0 };
         const { data: stage } = await supabase
           .from("stages")
-          .select("id")
+          .select("stage_id")
           .eq("course_id", profile.current_course)
-          .eq("stage_number", progress.stage)
+          .eq("stage_number", progress.stage_number)
           .single();
-        router.replace(`/home?stage=${stage?.id}`);
+        router.replace(`/home?stage=${stage?.stage_id}`);
       };
       checkStageId();
       return;
@@ -52,17 +55,17 @@ export default function HomePage() {
       const courseId = profile.current_course;
       const { data: uc } = await supabase
         .from("user_courses")
-        .select("module, stage")
-        .eq("user_id", profile.id)
+        .select("module_number, stage_number")
+        .eq("user_id", profile.user_id)
         .eq("course_id", courseId)
         .single();
 
-      const progress = uc ?? { module: 0, stage: 0 };
+      const progress = uc ?? { module_number: 0, stage_number: 0 };
       setUserProgress(progress);
 
       const { data: stages } = await supabase
         .from("stages")
-        .select("id, stage_number, course_id, title")
+        .select("stage_id, stage_number, course_id, title")
         .eq("course_id", courseId)
         .order("stage_number", { ascending: true });
       if (!stages || !stages.length) {
@@ -74,7 +77,7 @@ export default function HomePage() {
 
       const { data: qs, error: qErr } = await supabase
         .from("modules")
-        .select("module_id, order, course_id")
+        .select("module_id, module_number, course_id")
         .eq("course_id", courseId)
         .eq("stage_id", stage_id);
       if (qErr) {
@@ -87,9 +90,9 @@ export default function HomePage() {
         qs.map((q) => {
           return {
             module_id: q.module_id,
-            order: q.order,
+            module_number: q.module_number,
             stage_number:
-              stages.find((s) => s.id === stage_id)?.stage_number ?? 0,
+              stages.find((s) => s.stage_id === stage_id)?.stage_number ?? 0,
             course_id: q.course_id,
           };
         }) ?? [];
@@ -116,7 +119,7 @@ export default function HomePage() {
   if (stages.length === 0 || modules.length === 0) return <ComingSoon />;
 
   const totalModules = modules.length;
-  const idx = stages.findIndex((s) => s.id === stage_id);
+  const idx = stages.findIndex((s) => s.stage_id === stage_id);
   const stage = stages[idx];
 
   return (

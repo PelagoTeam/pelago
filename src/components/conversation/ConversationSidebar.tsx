@@ -38,9 +38,9 @@ export default function ConversationSidebar({
   hrefBase,
 }: {
   conversations: ConversationType[];
-  onSelect: (id: string) => void;
+  onSelect: (conversation_id: string) => void;
   onNewConversation: () => void;
-  onDeleteConversation: (id: string) => void;
+  onDeleteConversation: (conversation_id: string) => void;
   hrefBase?: string; // e.g. "/chat" -> navigates to /chat/[id]
 }) {
   const search = useSearchParams();
@@ -86,24 +86,26 @@ export default function ConversationSidebar({
           )}
           {conversations.map((conversation) => {
             const commonClick = () => {
-              onSelect(conversation.id);
+              onSelect(conversation.conversation_id);
               opts?.onAfterClick?.();
             };
             return (
-              <li key={conversation.id}>
+              <li key={conversation.conversation_id}>
                 {hrefBase ? (
                   <ItemLink
                     conversation={conversation}
-                    active={conversation.id === activeId}
-                    href={`${hrefBase}/${conversation.id}`}
+                    active={conversation.conversation_id === activeId}
+                    href={`${hrefBase}/${conversation.conversation_id}`}
                     onAfterClick={opts?.onAfterClick}
                   />
                 ) : (
                   <ItemButton
                     conversation={conversation}
-                    active={conversation.id === activeId}
+                    active={conversation.conversation_id === activeId}
                     onClick={commonClick}
-                    onDelete={() => onDeleteConversation(conversation.id)}
+                    onDelete={() =>
+                      onDeleteConversation(conversation.conversation_id)
+                    }
                   />
                 )}
               </li>

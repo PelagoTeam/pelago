@@ -1,66 +1,56 @@
-export type QuizQuestion = {
-  id: string;
-  prompt: string;
-  answers: { id: string; text: string; correct?: boolean }[];
-  hint?: string;
-  language: string;
-};
-
 export type Question = {
-  id: string;
+  question_id: string;
   created_at: string;
   explanation: string | null;
   hint: string;
   payload: MCQ | Compose;
   position: number;
   prompt: string;
-  type: "mcq" | "compose";
+  type: "MCQ" | "Compose";
 };
 
 export type MCQ = {
   answer: string;
-  options: { id: string; text: string }[];
+  options: { option_id: string; text: string }[];
   explanation: string | null;
 };
 
 export type Compose = {
-  tokens: { id: string; text: string }[];
+  tokens: { token_id: string; text: string }[];
   explanation: string | null;
   answer_order: string[];
 };
 
 export type Profile = {
-  id: string;
+  user_id: string;
   username: string | null;
-  current_course: string | null; // ← safer
+  current_course: string | null;
 };
 
 export type Module = {
   module_id: string;
-  order: number;
+  module_number: number;
   course_id: string;
   stage_number: number;
 };
 
 export type Stages = {
-  id: string;
+  stage_id: string;
   title: string;
   stage_number: number;
   course_id: string;
 };
 
-// TYPES ----------------------------------------------------------------------
-
 export type ConversationType = {
-  id: string;
+  conversation_id: string;
   title: string;
 };
 
 export type Theme = {
-  id: string;
+  theme_id: string;
   title: string;
   language: string;
-  starter_prompt: string;
+  prompt: string;
   culture_tips?: string;
   difficulty: "beginner" | "intermediate" | "advanced";
 };

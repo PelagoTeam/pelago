@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
 
   const { data: theme } = await supabase
     .from("themes")
-    .select("id, title, language, starter_prompt, difficulty")
-    .eq("id", themeId)
+    .select("theme_id, title, language, prompt, difficulty")
+    .eq("theme_id", themeId)
     .single();
 
   if (!theme) {
@@ -80,10 +80,12 @@ export async function POST(req: NextRequest) {
     .from("conversations")
     .upsert({
       user_id: user.id,
-      theme_id: theme.id,
+      theme_id: theme.theme_id,
       title: theme.title,
+      language: theme.language,
+      difficulty: theme.difficulty,
     })
-    .select("id")
+    .select("conversation_id")
     .single();
 
   if (convErr) {
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
   console.log("text generted");
 
   const { error: msgErr } = await supabase.from("messages").insert({
-    conversation_id: conv.id,
+    conversation_id: conv.conversation_id,
     role: "assistant",
     content: starting_text,
     user_id: user.id,
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
   console.log("message saved");
   return NextResponse.json(
     {
-      id: conv.id,
+      conversation_id: conv.conversation_id,
     },
     { status: 200 },
   );

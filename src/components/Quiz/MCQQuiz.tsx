@@ -5,27 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Lock, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "../ui/button";
-
-export type MCQOption = { id: string; text: string };
-export type MCQData = {
-  answer: string;
-  options: MCQOption[];
-  explanation: string;
-};
-
-type Props = {
-  prompt: string;
-  data: MCQData;
-  locked?: boolean;
-  onSubmit: (result: { correct: boolean }) => void;
-};
+import { MCQ } from "@/lib/types";
 
 export default function MCQQuiz({
   prompt,
   data,
   locked = false,
   onSubmit,
-}: Props) {
+}: {
+  prompt: string;
+  data: MCQ;
+  locked?: boolean;
+  onSubmit: (result: { correct: boolean }) => void;
+}) {
   const [selected, setSelected] = useState<string | null>(null);
 
   const letters = useMemo(
@@ -59,13 +51,13 @@ export default function MCQQuiz({
       <CardContent>
         <div className="flex flex-col gap-2">
           {data.options.map((opt, idx) => {
-            const isActive = selected === opt.id;
+            const isActive = selected === opt.option_id;
             return (
               <button
-                key={opt.id}
+                key={opt.option_id}
                 type="button"
                 disabled={locked}
-                onClick={() => !locked && setSelected(opt.id)}
+                onClick={() => !locked && setSelected(opt.option_id)}
                 className={`roup relative flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-all
                   focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40
                   ${

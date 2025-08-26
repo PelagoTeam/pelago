@@ -31,8 +31,8 @@ export default function CoursePickerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>("");
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [availableCourses, setavailableCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,9 +47,9 @@ export default function CoursePickerPage() {
         if (!cancelled) {
           if (error) {
             setError(error.message);
-            setCourses([]);
+            setavailableCourses([]);
           } else {
-            setCourses(data ?? []);
+            setavailableCourses(data ?? []);
           }
         }
       } catch (err: unknown) {
@@ -57,7 +57,7 @@ export default function CoursePickerPage() {
         const msg =
           err instanceof Error ? err.message : "Failed to load courses.";
         setError(msg);
-        setCourses([]);
+        setavailableCourses([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -69,19 +69,20 @@ export default function CoursePickerPage() {
 
   // 2) Save selection
   async function saveSelection() {
-    if (!user?.id || !selectedId) return;
+    if (!user?.id || !selectedCourse) return;
     setError("");
     setSaving(true);
 
     try {
-      console.log(selectedId);
+      console.log(selectedCourse);
       const { error: upErr } = await supabase
         .from("users")
         .upsert({
           user_id: user.id,
           username: user.user_metadata.username,
           total_points: 0,
-          current_course: selectedId,
+          current_course: selectedCourse.course_id,
+          language: selectedCourse.language,
         })
         .eq("user_id", user.id);
 
@@ -89,7 +90,7 @@ export default function CoursePickerPage() {
 
       const { error: ucErr } = await supabase.from("user_courses").upsert({
         user_id: user.id,
-        course_id: selectedId,
+        course_id: selectedCourse.course_id,
         module: 0,
         stage: 0,
       });
@@ -121,7 +122,7 @@ export default function CoursePickerPage() {
           </div>
           <div className="hidden sm:flex items-center gap-2">
             <Badge variant="secondary" className="rounded-full">
-              {courses.length} available
+              {availableCourses.length} available
             </Badge>
           </div>
         </header>
@@ -134,17 +135,17 @@ export default function CoursePickerPage() {
 
         {loading ? (
           <CourseSkeletonGrid />
-        ) : courses.length === 0 ? (
+        ) : availableCourses.length === 0 ? (
           <EmptyState />
         ) : (
           <>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {courses.map((c) => (
+              {availableCourses.map((c) => (
                 <CourseCard
                   key={c.course_id}
                   course={c}
-                  selected={selectedId === c.course_id}
-                  onSelect={() => setSelectedId(c.course_id)}
+                  selected={selectedCourse?.course_id === c.course_id}
+                  onSelect={() => setSelectedCourse(c)}
                 />
               ))}
             </div>
@@ -154,7 +155,7 @@ export default function CoursePickerPage() {
             <div className="flex items-center gap-3">
               <Button
                 onClick={saveSelection}
-                disabled={!selectedId || saving}
+                disabled={!selectedCourse || saving}
                 className="rounded-xl"
               >
                 {saving ? (

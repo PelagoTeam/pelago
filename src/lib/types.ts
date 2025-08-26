@@ -32,6 +32,7 @@ export type Profile = {
   user_id: string;
   username: string | null;
   current_course: string | null;
+  language: string | null;
 };
 
 export type Module = {

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Profile } from "@/lib/types";
 
 type Conversation = {
   topic: string;
@@ -56,13 +57,10 @@ export default function Conversation({
   useEffect(() => {
     let running = false;
     (async () => {
-      if (!running && profile) {
+      if (!running && profile && conversation_id) {
+        console.log("fetching conversation");
         running = true;
-        const conversation = await getConversation(
-          conversation_id,
-          profile.user_id,
-        );
-        console.log("conversation", conversation);
+        const conversation = await getConversation(conversation_id, profile);
         setConversation(conversation);
       }
     })();
@@ -302,19 +300,21 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
 
 async function getConversation(
   conversation_id: string,
-  user_id: string,
+  profile: Profile,
 ): Promise<Conversation> {
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
     .select("message_id, role, content, remarks")
     .eq("conversation_id", conversation_id)
-    .eq("user_id", user_id)
+    .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
   if (error) throw error;
   const { data: conversation, error: e } = await supabase
     .from("conversations")
     .select("title, difficulty, language")
+    .eq("user_id", profile.user_id)
+    .eq("language", profile.language)
     .eq("conversation_id", conversation_id)
     .single();
   if (e) throw e;

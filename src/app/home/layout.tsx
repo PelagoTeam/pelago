@@ -64,10 +64,11 @@ export default function HomeLayout({
   const { user, profile, signOut, refresh, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const [userCourses, setUserCourses] = useState<Course[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [currentCourse, setCurrentCourse] = useState<Course>();
   const [loading, setLoading] = useState(false);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const fetchIcon = async () => {
@@ -79,7 +80,7 @@ export default function HomeLayout({
             .select("icon_url, language, course_id");
           if (error) throw error;
           if (data) {
-            setUserCourses(data);
+            setAvailableCourses(data);
             setCurrentCourse(
               data.find((c) => c.course_id === profile.current_course),
             );
@@ -102,24 +103,41 @@ export default function HomeLayout({
     "U"
   ).toUpperCase();
 
-  async function switchCourse(courseId: string) {
-    if (!profile || switchingId === courseId) return;
+  async function switchCourse(course: Course) {
+    if (!profile || switchingId === course.course_id) return;
     try {
-      setSwitchingId(courseId);
+      setSwitchingId(course.course_id);
       const { error } = await supabase
         .from("users")
-        .update({ current_course: courseId })
+        .update({ current_course: course.course_id, language: course.language })
         .eq("user_id", profile.user_id);
+      const { error: ucErr } = await supabase.from("user_courses").upsert(
+        {
+          user_id: profile.user_id,
+          course_id: course.course_id,
+          module_number: 0,
+          stage_number: 0,
+        },
+        {
+          ignoreDuplicates: true,
+        },
+      );
 
-      if (error) throw error;
-      const next = userCourses.find((c) => c.course_id === courseId);
+      if (error || ucErr) throw error || ucErr;
+      const next = availableCourses.find(
+        (c) => c.course_id === course.course_id,
+      );
       if (next) setCurrentCourse(next);
       await refresh();
     } catch (e) {
       console.error("[Course switch] error:", e);
     } finally {
       setSwitchingId(null);
-      router.replace("/home");
+      if (pathname === "/home") {
+        router.replace("/home");
+      } else if (pathname === "/home/conversation") {
+        router.replace("/home/conversation");
+      }
     }
   }
 
@@ -164,7 +182,7 @@ export default function HomeLayout({
                       </div>
 
                       <div className="grid grid-cols-3 gap-3">
-                        {userCourses.map((c) => {
+                        {availableCourses.map((c) => {
                           const isActive =
                             c.course_id === profile?.current_course;
                           const isBusy = switchingId === c.course_id;
@@ -172,7 +190,7 @@ export default function HomeLayout({
                             <button
                               key={c.course_id}
                               type="button"
-                              onClick={() => switchCourse(c.course_id)}
+                              onClick={() => switchCourse(c)}
                               disabled={isBusy}
                               className={cn(
                                 "group relative flex flex-col items-center gap-1 rounded-lg border p-2 transition",

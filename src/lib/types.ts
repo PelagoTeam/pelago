@@ -1,13 +1,20 @@
-export type Question = {
-  question_id: string;
-  created_at: string;
-  explanation: string | null;
-  hint: string;
-  payload: MCQ | Compose;
-  position: number;
-  prompt: string;
-  type: "MCQ" | "Compose";
-};
+export type Question =
+  | {
+      question_id: string;
+      module_id: string;
+      position: number;
+      type: "MCQ";
+      prompt: string;
+      payload: MCQ;
+    }
+  | {
+      question_id: string;
+      module_id: string;
+      position: number;
+      type: "Compose";
+      prompt: string;
+      payload: Compose;
+    };
 
 export type MCQ = {
   answer: string;

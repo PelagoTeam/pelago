@@ -8,34 +8,7 @@ import MCQQuiz from "@/components/Quiz/MCQQuiz";
 import ComposeQuiz from "@/components/Quiz/ComposeQuiz";
 
 import { Button } from "@/components/ui/button";
-import { Compose, MCQ } from "@/lib/types";
-
-type QuestionRow = {
-  question_id: string;
-  module_id: string;
-  position: number;
-  type: "MCQ" | "Compose";
-  prompt: string | null;
-  payload: MCQ | Compose;
-};
-
-type MCQQuestion = {
-  question_id: string;
-  position: number;
-  type: "MCQ";
-  prompt: string;
-  payload: MCQ;
-};
-
-type ComposeQuestion = {
-  question_id: string;
-  position: number;
-  type: "Compose";
-  prompt: string;
-  payload: Compose;
-};
-
-type Question = MCQQuestion | ComposeQuestion;
+import { Question } from "@/lib/types";
 
 export default function QuizPage() {
   const router = useRouter();
@@ -79,11 +52,12 @@ export default function QuizPage() {
         if (qErr) throw qErr;
 
         const normalized: Question[] = (data ?? [])
-          .map((r: QuestionRow) => {
+          .map((r: Question) => {
             const prompt = (r.prompt ?? "").toString();
             if (r.type === "MCQ") {
               return {
                 question_id: r.question_id,
+                module_id: r.module_id,
                 position: r.position,
                 type: "MCQ",
                 prompt,
@@ -93,6 +67,7 @@ export default function QuizPage() {
             if (r.type === "Compose") {
               return {
                 question_id: r.question_id,
+                module_id: r.module_id,
                 position: r.position,
                 type: "Compose",
                 prompt,

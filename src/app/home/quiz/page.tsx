@@ -163,13 +163,14 @@ export default function QuizPage() {
       if (profile?.user_id) {
         const { data: p, error: selErr } = await supabase
           .from("user_courses")
-          .select("stage, module")
+          .select("stage_number, module_number")
           .eq("user_id", profile.user_id)
           .eq("course_id", profile.current_course)
           .single();
         if (selErr) throw selErr;
-        const currentModule = (p?.module ?? 0) as number;
-        const currentStage = (p?.stage ?? 0) as number;
+        console.log(p);
+        const currentModule = (p?.module_number ?? 0) as number;
+        const currentStage = (p?.stage_number ?? 0) as number;
 
         const { data: s, error: stageErr } = await supabase
           .from("stages")
@@ -186,7 +187,7 @@ export default function QuizPage() {
 
         const { data: modules, error: moErr } = await supabase
           .from("modules")
-          .select("order")
+          .select("module_number")
           .eq("stage_id", stage_id);
         if (moErr) throw moErr;
         const totalModules = (modules?.length ?? 0) as number;
@@ -195,17 +196,17 @@ export default function QuizPage() {
           console.log("Updating progress...");
           const { error: updErr } = await supabase
             .from("user_courses")
-            .update({ module: currentModule + 1 })
+            .update({ module_number: currentModule + 1 })
             .eq("user_id", profile.user_id)
             .eq("course_id", profile.current_course);
           if (updErr) throw updErr;
         } else {
           try {
-            const { error } = await supabase.rpc("incrementuserstage", {
-              module_number: currentModule,
-              stage_number: currentStage,
-              course_id: profile.current_course,
-            });
+            const { error } = await supabase
+              .from("user_courses")
+              .update({ stage_number: currentStage + 1, module_number: 0 })
+              .eq("user_id", profile.user_id)
+              .eq("course_id", profile.current_course);
             if (error) throw error;
           } catch (e) {
             console.error("Failed to update stage:", e);
@@ -219,7 +220,6 @@ export default function QuizPage() {
         console.log(profile?.user_id);
         const { error: updErr } = await supabase.rpc("increment_points", {
           x: 50,
-          row_id: profile?.user_id,
         });
         if (updErr) throw updErr;
       } catch (e) {

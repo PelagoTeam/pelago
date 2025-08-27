@@ -147,99 +147,96 @@ export default function HomeLayout({
         <header className=" border-2 sticky top-0 z-40 px-5 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex justify-between items-center px-4 h-16">
             <div className="flex gap-6 justify-between items-center w-full">
-              <h1
-                className={cn(
-                  "text-xl font-semibold tracking-tight",
-                  "bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent",
-                )}
-              >
+              <h1 className="flex-1 text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Pelago
               </h1>
 
               {/* Desktop nav */}
 
-              <div className="hidden gap-2 items-center py-1 px-2 rounded-xl ring-1 sm:flex bg-primary/10 ring-primary/20">
-                {user && !loading && currentCourse ? (
-                  <HoverCard openDelay={120} closeDelay={80}>
-                    <HoverCardTrigger asChild>
-                      <Avatar className="w-9 h-9 ring-1 cursor-pointer ring-border">
-                        <AvatarImage
-                          src={currentCourse.icon_url}
-                          alt={currentCourse.language}
-                        />
-                        <AvatarFallback className="bg-muted text-foreground">
-                          {currentCourse.language}
-                        </AvatarFallback>
-                      </Avatar>
-                    </HoverCardTrigger>
-                    <HoverCardContent
-                      align="start"
-                      side="bottom"
-                      className="p-3 w-80 border bg-card"
-                    >
-                      <div className="mb-2 text-xs font-medium text-muted-foreground">
-                        Your courses
-                      </div>
+              <div className="hidden sm:flex flex-1 justify-center">
+                <div className="bg-primary/10 flex gap-2 rounded-xl ring-1 items-center py-1 px-2 ring-primary/20 justify-center ">
+                  {user && !loading && currentCourse ? (
+                    <HoverCard openDelay={120} closeDelay={80}>
+                      <HoverCardTrigger asChild>
+                        <Avatar className="w-9 h-9 ring-1 cursor-pointer ring-border">
+                          <AvatarImage
+                            src={currentCourse.icon_url}
+                            alt={currentCourse.language}
+                          />
+                          <AvatarFallback className="bg-muted text-foreground">
+                            {currentCourse.language}
+                          </AvatarFallback>
+                        </Avatar>
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        align="start"
+                        side="bottom"
+                        className="p-3 w-80 border bg-card"
+                      >
+                        <div className="mb-2 text-xs font-medium text-muted-foreground">
+                          Your courses
+                        </div>
 
-                      <div className="grid grid-cols-3 gap-3">
-                        {availableCourses.map((c) => {
-                          const isActive =
-                            c.course_id === profile?.current_course;
-                          const isBusy = switchingId === c.course_id;
-                          return (
-                            <button
-                              key={c.course_id}
-                              type="button"
-                              onClick={() => switchCourse(c)}
-                              disabled={isBusy}
-                              className={cn(
-                                "group relative flex flex-col items-center gap-1 rounded-lg border p-2 transition",
-                                "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                isActive
-                                  ? "border-primary/50 bg-primary/5"
-                                  : "border-border",
-                              )}
-                              title={c.language}
-                            >
-                              <Avatar
+                        <div className="grid grid-cols-3 gap-3">
+                          {availableCourses.map((c) => {
+                            const isActive =
+                              c.course_id === profile?.current_course;
+                            const isBusy = switchingId === c.course_id;
+                            return (
+                              <button
+                                key={c.course_id}
+                                type="button"
+                                onClick={() => switchCourse(c)}
+                                disabled={isBusy}
                                 className={cn(
-                                  "h-10 w-10 ring-1 ring-border",
-                                  isActive && "ring-primary/60",
+                                  "group relative flex flex-col items-center gap-1 rounded-lg border p-2 transition",
+                                  "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                  isActive
+                                    ? "border-primary/50 bg-primary/5"
+                                    : "border-border",
                                 )}
+                                title={c.language}
                               >
-                                <AvatarImage
-                                  src={c.icon_url}
-                                  alt={c.language}
-                                />
-                                <AvatarFallback className="bg-muted text-foreground">
+                                <Avatar
+                                  className={cn(
+                                    "h-10 w-10 ring-1 ring-border",
+                                    isActive && "ring-primary/60",
+                                  )}
+                                >
+                                  <AvatarImage
+                                    src={c.icon_url}
+                                    alt={c.language}
+                                  />
+                                  <AvatarFallback className="bg-muted text-foreground">
+                                    {c.language}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs text-foreground/80 truncate max-w-[6rem]">
                                   {c.language}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs text-foreground/80 truncate max-w-[6rem]">
-                                {c.language}
-                              </span>
-                              {isActive && !isBusy && (
-                                <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
-                                  <Check className="w-3 h-3" />
                                 </span>
-                              )}
-                              {isBusy && (
-                                <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-secondary">
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                ) : null}
-                <nav className="hidden gap-2 items-center p-1 rounded-full sm:flex bg-muted/30">
-                  <NavItem href="/home" label="Practice" />
-                  <NavItem href="/home/conversation" label="Conversation" />
-                  <NavItem href="/home/leaderboard" label="Leaderboard" />
-                </nav>
+                                {isActive && !isBusy && (
+                                  <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
+                                    <Check className="w-3 h-3" />
+                                  </span>
+                                )}
+                                {isBusy && (
+                                  <span className="grid absolute -top-2 -right-2 place-items-center w-5 h-5 rounded-full bg-secondary">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  ) : null}
+                  <nav className="hidden gap-2 items-center p-1 rounded-full sm:flex bg-muted/30">
+                    <NavItem href="/home" label="Practice" />
+                    <NavItem href="/home/conversation" label="Conversation" />
+                    <NavItem href="/home/leaderboard" label="Leaderboard" />
+                  </nav>
+                </div>
               </div>
               {/* Mobile nav */}
               <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
@@ -277,11 +274,12 @@ export default function HomeLayout({
                   </SheetContent>
                 </Sheet>
               </div>
-              <div className="flex gap-3 items-center">
+
+              <div className="flex gap-3 items-center flex-1 justify-end">
                 {user && !loading && currentCourse ? (
                   <>
                     <div className="hidden flex-col items-end leading-tight sm:flex">
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-medium leading-none">
                         {profile?.username ?? user.email}
                       </span>
                     </div>

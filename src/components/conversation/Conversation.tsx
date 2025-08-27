@@ -203,7 +203,7 @@ export default function Conversation({
     }
   };
   return (
-    <div className="relative h-[80vh] w-full rounded-xl border bg-background shadow-sm">
+    <div className="relative h-full w-full rounded-xl border bg-background shadow-sm">
       <div className="absolute right-3 top-3 z-10">
         <Button variant="outline" onClick={handleShowHistory}>
           View History

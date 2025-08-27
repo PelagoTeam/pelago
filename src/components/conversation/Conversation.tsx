@@ -5,18 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { InfoIcon, SendIcon } from "lucide-react";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import { cn } from "@/lib/utils";
+import { SendIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
-import { useRouter } from "next/navigation";
+import ConversationHistory from "./ConversationHistory";
+import { Dialog, DialogContent, DialogHeader } from "../ui/dialog";
 
 type Conversation = {
   topic: string;
@@ -48,13 +43,12 @@ export default function Conversation({
   conversation_id: string;
 }) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
+  const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-  const hasScrolledOnce = useRef(false);
+
   const { profile, loading: authLoading } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     if (!profile || !conversation_id || authLoading) return;
@@ -73,17 +67,6 @@ export default function Conversation({
       clearTimeout(handle);
     };
   }, [conversation_id, profile, authLoading]);
-
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({
-        behavior: hasScrolledOnce.current ? "smooth" : "auto",
-        block: "end",
-      });
-      hasScrolledOnce.current = true;
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [conversation?.messages.length, loading]);
 
   async function send() {
     if (!input.trim()) {
@@ -175,6 +158,10 @@ export default function Conversation({
     }
   }
 
+  const handleShowHistory = () => {
+    setShowHistory(!showHistory);
+  };
+
   if (!conversation) {
     return (
       <Card className="flex flex-col w-full h-full">
@@ -209,96 +196,58 @@ export default function Conversation({
     );
   }
 
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!loading && input.trim()) send();
+    }
+  };
   return (
-    <Card className="flex flex-col w-full h-full">
-      <CardHeader>
-        <CardTitle>
-          Conversation •{" "}
-          <span className="font-normal text-muted-foreground">
-            {conversation.topic}
-          </span>
-        </CardTitle>
-      </CardHeader>
+    <div className="relative h-[80vh] w-full rounded-xl border bg-background shadow-sm">
+      <div className="absolute right-3 top-3 z-10">
+        <Button variant="outline" onClick={handleShowHistory}>
+          View History
+        </Button>
+      </div>
 
-      <CardContent className="flex flex-col flex-1 gap-3 min-h-0">
-        <div className="flex overflow-y-scroll flex-col flex-1 gap-3 min-h-0 no-scrollbar">
-          {conversation.messages.map((message) => (
-            <MessageBubble key={message.message_id} message={message} />
-          ))}
-          {loading && (
-            <AssistantMessageBubble
-              message={{
-                message_id: "XXX",
-                role: "assistant",
-                content: "...",
-                pending: true,
-              }}
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-auto p-4">
+          <div className="h-full rounded-lg border border-dashed p-4 text-muted-foreground">
+            Chat area (placeholder)
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
+          <div className="p-3">
+            <div className="flex items-end gap-3">
+              <Textarea
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                }}
+                onKeyDown={onKeyDown}
+                placeholder="Type your message…"
+                className="max-w-full h-9 min-h-9 resize-none"
+              />
+              <Button onClick={send} disabled={loading} size="icon">
+                <SendIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showHistory && (
+        <div className="absolute top-12 right-3 w-[28rem] z-20 bg-background border rounded-xl shadow-lg overflow-hidden">
+          <div className="h-[80vh] overflow-y-auto p-3">
+            <ConversationHistory
+              conversation={conversation}
+              error={error}
+              loading={loading}
             />
-          )}
-          <div ref={bottomRef} className="h-0" />
+          </div>
         </div>
-
-        <Separator />
-
-        {error && <p className="text-red-600">{error}</p>}
-
-        <div className="flex gap-3">
-          <Textarea
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              if (error) setError("");
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                if (!loading && input.trim()) send();
-              }
-            }}
-            placeholder="Type your message…"
-            className="max-w-full h-9 resize-none min-h-9"
-          />
-          <Button onClick={send} disabled={loading} size="icon">
-            <SendIcon />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function MessageBubble({ message }: { message: Message }) {
-  if (message.role === "assistant") {
-    return <AssistantMessageBubble message={message} />;
-  } else if (message.role === "user") {
-    return <UserMessageBubble message={message} />;
-  }
-}
-
-function AssistantMessageBubble({ message }: { message: AssistantMessage }) {
-  return (
-    <div className="text-left">
-      <div className="inline-block py-2 px-4 whitespace-pre-wrap rounded-2xl bg-muted">
-        {message.content}
-      </div>
-    </div>
-  );
-}
-
-function UserMessageBubble({ message }: { message: UserMessage }) {
-  return (
-    <div className="flex gap-3 justify-end items-center">
-      <HoverCard>
-        <HoverCardTrigger>
-          <InfoIcon
-            className={cn("w-5", message.pending ? "animate-pulse" : "")}
-          />
-        </HoverCardTrigger>
-        <HoverCardContent>{message.remarks}</HoverCardContent>
-      </HoverCard>
-      <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
-        {message.content}
-      </div>
+      )}
     </div>
   );
 }

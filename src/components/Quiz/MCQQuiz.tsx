@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Lock, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { MCQ } from "@/lib/types";
 
 export default function MCQQuiz({

@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, MoreVertical, Search, Trash2, Menu } from "lucide-react";
+import {
+  Plus,
+  MoreVertical,
+  Search,
+  Trash2,
+  PanelLeftIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { ConversationType } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 /**
  * ChatSidebar
@@ -48,7 +52,7 @@ export default function ConversationSidebar({
   const [open, setOpen] = useState(false);
 
   const SidebarContent = (opts?: { onAfterClick?: () => void }) => (
-    <>
+    <div className="">
       <div className="p-3">
         <div className="flex gap-2 items-center">
           <div className="text-lg font-semibold">Chats</div>
@@ -64,6 +68,21 @@ export default function ConversationSidebar({
             >
               <Plus className="mr-1 w-4 h-4" /> New chat
             </Button>
+            <div className="flex gap-2 items-center ml-auto">
+              <Tooltip>
+                <TooltipTrigger>
+                  <Button
+                    size="sm"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl"
+                    variant="default"
+                  >
+                    <PanelLeftIcon className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Close sidebar</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
         <div className="flex gap-2 items-center py-1.5 px-2 mt-3 rounded-xl border">
@@ -113,36 +132,57 @@ export default function ConversationSidebar({
           })}
         </ul>
       </ScrollArea>
-    </>
+    </div>
   );
 
   return (
     <>
-      {/* Mobile: hamburger + drawer (doesn't push layout) */}
-      <div className="md:hidden">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
+      <div className="z-30 w-12 bg-background/80 backdrop-blur border-r supports-[backdrop-filter]:bg-background/60 flex flex-col items-center gap-2 pr-2">
+        <Tooltip>
+          <TooltipTrigger>
             <Button
               variant="outline"
               size="icon"
-              className="fixed left-3 top-16 z-40 rounded-xl"
-              aria-label="Open menu"
+              className="rounded-xl"
+              aria-label="Open sidebar"
+              onClick={() => setOpen(true)}
             >
-              <Menu className="w-5 h-5" />
+              <PanelLeftIcon className="w-5 h-5" />
             </Button>
-          </SheetTrigger>
-
-          <SheetContent side="left" className="p-0 max-w-sm w-[85vw]">
-            <SheetHeader className="py-2 px-3">
-              <SheetTitle>Menu</SheetTitle>
-            </SheetHeader>
-            <SidebarContent onAfterClick={() => setOpen(false)} />
-          </SheetContent>
-        </Sheet>
+          </TooltipTrigger>
+          <TooltipContent side="right">Open sidebar</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="default"
+              size="icon"
+              className="rounded-xl mt-1"
+              aria-label="New chat"
+              onClick={onNewConversation}
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">New chat</TooltipContent>
+        </Tooltip>
       </div>
 
-      <aside className="hidden flex-col h-full border-r md:flex shrink-0 bg-background/60 backdrop-blur-sm basis-64 max-w-[22rem] lg:basis-72 xl:basis-80">
-        <SidebarContent />
+      <div
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      >
+        <div className="absolute inset-0" onClick={() => setOpen(false)} />
+      </div>
+
+      <aside
+        className={`fixed left-0 z-50 h-screen w-[min(85vw,22rem)] bg-background border-r shadow-xl transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+        aria-hidden={!open}
+      >
+        <SidebarContent onAfterClick={() => setOpen(false)} />
       </aside>
     </>
   );
@@ -202,9 +242,8 @@ function ItemButton({
         if (e.key === "Enter" || e.key === " ") onClick?.();
       }}
       className={`
-        group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-colors focus-visible:ring-2 ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}
+        group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2 outline-none transition-colors focus-visible:ring-2 ${active ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-foreground/10"}
       `}
-      title={conversation.title}
     >
       <div className="flex flex-col flex-1 min-w-0">
         <div className="flex gap-2 items-center">
@@ -215,17 +254,21 @@ function ItemButton({
           </div>
         </div>
       </div>
-      <button
-        className="p-1 ml-1 rounded-md opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:bg-muted"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete?.();
-        }}
-        aria-label="Delete chat"
-        title="Delete chat"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            className="p-1 ml-1 rounded-md opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:bg-destructive/70"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.();
+            }}
+            variant={"ghost"}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Delete chat</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

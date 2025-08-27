@@ -128,11 +128,11 @@ export default function HomeLayout({
         (c) => c.course_id === course.course_id,
       );
       if (next) setCurrentCourse(next);
-      await refresh();
     } catch (e) {
       console.error("[Course switch] error:", e);
     } finally {
       setSwitchingId(null);
+      refresh();
       if (pathname === "/home") {
         router.replace("/home");
       } else if (pathname === "/home/conversation") {

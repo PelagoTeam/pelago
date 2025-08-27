@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 type Conversation = {
   topic: string;
@@ -52,22 +53,26 @@ export default function Conversation({
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const hasScrolledOnce = useRef(false);
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    let running = false;
-    (async () => {
-      if (!running && profile && conversation_id) {
-        console.log("fetching conversation");
-        running = true;
-        const conversation = await getConversation(conversation_id, profile);
-        setConversation(conversation);
-      }
-    })();
+    if (!profile || !conversation_id || authLoading) return;
+    let disposed = false;
+    const handle = setTimeout(() => {
+      (async () => {
+        const conv = await getConversation(conversation_id, profile);
+        if (!disposed) {
+          console.log("ASYNC finished with", conversation_id);
+          setConversation(conv);
+        }
+      })();
+    }, 100);
     return () => {
-      running = true;
+      disposed = true;
+      clearTimeout(handle);
     };
-  }, [conversation_id, profile]);
+  }, [conversation_id, profile, authLoading]);
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
@@ -316,7 +321,9 @@ async function getConversation(
     .eq("user_id", profile.user_id)
     .eq("language", profile.language)
     .eq("conversation_id", conversation_id)
+    .order("created_at", { ascending: true })
     .single();
+
   if (e) throw e;
   return {
     topic: conversation.title,

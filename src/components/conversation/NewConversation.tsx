@@ -5,7 +5,6 @@ import { Theme } from "@/lib/types";
 import { Loader2, Plus } from "lucide-react";
 import { Separator } from "@radix-ui/react-separator";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 export default function NewConversation({
   themes,
@@ -87,13 +86,14 @@ export default function NewConversation({
                       role="radio"
                       aria-checked={active}
                       onClick={() => setThemeId(t.theme_id)}
-                      className={cn(
-                        "group relative w-full rounded-2xl border bg-card p-4 text-left transition-all",
-                        "hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring/40",
-                        active
-                          ? "border-primary/60 ring-1 ring-primary/40 shadow-sm"
-                          : "border-border",
-                      )}
+                      className={`
+                        group relative w-full rounded-2xl border bg-card p-4 text-left transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring/40
+                        ${
+                          active
+                            ? "border-primary/60 ring-1 ring-primary/40 shadow-sm"
+                            : "border-border"
+                        }
+                      `}
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-1">

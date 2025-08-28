@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
 import { Check, Lock, Star } from "lucide-react";
 
 type Module = {
@@ -146,17 +145,21 @@ export default function ZigZagRoadmap({
             <button
               key={m.module_id}
               onClick={() => goto(m.module_id, !clickable)}
-              className={cn(
-                "absolute grid place-items-center rounded-full border-2 transition shadow-sm",
-                "focus:outline-none focus-visible:ring-4",
-                "w-[72px] h-[72px]",
-                st === "done" &&
-                  "bg-primary text-primary-foreground border-primary/40 focus-visible:ring-primary/25",
-                st === "current" &&
-                  "bg-accent text-accent-foreground border-accent/40 focus-visible:ring-accent/30 cursor-pointer",
-                st === "locked" &&
-                  "bg-muted text-muted-foreground border-border cursor-not-allowed",
-              )}
+              className={`
+                absolute grid place-items-center rounded-full border-2 transition shadow-sm focus:outline-none focus-visible:ring-4 w-[72px] h-[72px]
+                ${
+                  st === "done" &&
+                  "bg-primary text-primary-foreground border-primary/40 focus-visible:ring-primary/25"
+                }
+                ${
+                  st === "current" &&
+                  "bg-accent text-accent-foreground border-accent/40 focus-visible:ring-accent/30 cursor-pointer"
+                }
+                ${
+                  st === "locked" &&
+                  "bg-muted text-muted-foreground border-border cursor-not-allowed"
+                }
+              `}
               style={{
                 left: `calc(50% + ${x}px)`,
                 top: y,

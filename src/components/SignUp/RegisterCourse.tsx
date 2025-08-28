@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { Check, Loader2, BookOpen, Languages } from "lucide-react";
 
 type Course = {
@@ -196,10 +195,8 @@ function CourseCard({
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect()}
-      className={cn(
-        "group h-full cursor-pointer rounded-2xl border transition-colors hover:bg-muted/50 focus-within:ring-2",
-        selected && "ring-2 ring-primary/40",
-      )}
+      className={`group h-full cursor-pointer rounded-2xl border transition-colors hover:bg-muted/50 focus-within:ring-2 
+        ${selected && "ring-2 ring-primary/40"}`}
     >
       <CardHeader className="flex flex-row items-center gap-3 pb-2">
         <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10 text-primary">

@@ -14,8 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full [scrollbar-gutter:stable]">
-      <body className="antialiased w-[100svw] h-[100svh] text-foreground overflow-x-clip">
+    <html lang="en" className="h-full">
+      <body className="antialiased text-foreground overflow-x-clip h-full w-full">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

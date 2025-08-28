@@ -70,7 +70,7 @@ export default function ConversationSidebar({
             </Button>
             <div className="flex gap-2 items-center ml-auto">
               <Tooltip>
-                <TooltipTrigger>
+                <TooltipTrigger asChild>
                   <Button
                     size="sm"
                     onClick={() => setOpen(false)}
@@ -139,7 +139,7 @@ export default function ConversationSidebar({
     <>
       <div className="z-30 w-12 bg-background/80 backdrop-blur border-r supports-[backdrop-filter]:bg-background/60 flex flex-col items-center gap-2 pr-2">
         <Tooltip>
-          <TooltipTrigger>
+          <TooltipTrigger asChild>
             <Button
               variant="outline"
               size="icon"
@@ -153,7 +153,7 @@ export default function ConversationSidebar({
           <TooltipContent side="right">Open sidebar</TooltipContent>
         </Tooltip>
         <Tooltip>
-          <TooltipTrigger>
+          <TooltipTrigger asChild>
             <Button
               variant="default"
               size="icon"
@@ -255,7 +255,7 @@ function ItemButton({
         </div>
       </div>
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             className="p-1 ml-1 rounded-md opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:bg-destructive/70"
             onClick={(e) => {

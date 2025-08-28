@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Lock, PlayCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default function StagePage() {
   const { profile } = useAuth();
@@ -106,19 +105,19 @@ export default function StagePage() {
           return (
             <Card
               key={stage.stage_id}
-              className={cn(
-                "relative overflow-hidden border transition",
-                isDone && "bg-secondary/60",
-                isCurrent && "ring-2 ring-primary/30",
-                isLocked && "opacity-90",
-              )}
+              className={`
+                "relative overflow-hidden border transition
+                ${isDone && "bg-secondary/60"} 
+                ${isCurrent && "ring-2 ring-primary/30"}
+                ${isLocked && "opacity-90"}
+              `}
             >
               {/* Accent bar on top */}
               <div
-                className={cn(
+                className={`
                   "absolute inset-x-0 top-0 h-1",
-                  isDone ? "bg-primary" : isCurrent ? "bg-accent" : "bg-border",
-                )}
+                  ${isDone ? "bg-primary" : isCurrent ? "bg-accent" : "bg-border"}
+                `}
               />
 
               <CardHeader className="pb-3">
@@ -164,14 +163,16 @@ export default function StagePage() {
 
               {/* Soft background flourish using theme tokens */}
               <div
-                className={cn(
-                  "pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-2xl",
-                  isDone
-                    ? "bg-primary/15"
-                    : isCurrent
-                      ? "bg-accent/20"
-                      : "bg-muted/40",
-                )}
+                className={`
+                  pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full blur-2xl
+                  ${
+                    isDone
+                      ? "bg-primary/15"
+                      : isCurrent
+                        ? "bg-accent/20"
+                        : "bg-muted/40"
+                  }
+                `}
               />
             </Card>
           );

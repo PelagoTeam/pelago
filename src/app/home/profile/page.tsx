@@ -21,7 +21,6 @@ import {
   Calendar,
   BookOpen,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type UserMeta = {
   created_at: string | null;
@@ -161,7 +160,7 @@ export default function ProfilePage() {
   const emailVerified = Boolean(user.email_confirmed_at);
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6 mx-auto px-4">
       <Card className="border">
         <CardHeader>
           <CardTitle className="text-lg">Profile</CardTitle>
@@ -183,10 +182,7 @@ export default function ProfilePage() {
                 <span className="text-sm">{user.email}</span>
                 <Badge
                   variant={emailVerified ? "secondary" : "outline"}
-                  className={cn(
-                    "ml-2",
-                    emailVerified ? "border-transparent" : "",
-                  )}
+                  className={`ml-2 ${emailVerified && "border-transparent"}`}
                 >
                   {emailVerified ? "Verified" : "Unverified"}
                 </Badge>
@@ -202,7 +198,7 @@ export default function ProfilePage() {
                   <Calendar className="h-3.5 w-3.5" />
                   {metaLoading || !meta.created_at
                     ? "…"
-                    : new Date(meta.created_at).toLocaleDateString()}
+                    : new Date(meta.created_at).toLocaleDateString("en-UK")}
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <BookOpen className="h-3.5 w-3.5" />
@@ -239,7 +235,7 @@ export default function ProfilePage() {
               <div className="text-lg font-semibold">
                 {metaLoading || !meta.created_at
                   ? "…"
-                  : new Date(meta.created_at).toLocaleDateString()}
+                  : new Date(meta.created_at).toLocaleDateString("en-UK")}
               </div>
             </div>
             <div className="rounded-md border p-3">
@@ -274,12 +270,7 @@ export default function ProfilePage() {
           {/* Status */}
           {status && (
             <div
-              className={cn(
-                "rounded-md border px-3 py-2 text-sm",
-                status.type === "ok"
-                  ? "bg-secondary text-secondary-foreground border-transparent"
-                  : "bg-destructive/10 text-destructive border-destructive/30",
-              )}
+              className={`rounded-md border px-3 py-2 text-sm ${status.type === "ok" ? "bg-secondary text-secondary-foreground border-transparent" : "bg-destructive/10 text-destructive border-destructive/30"}`}
             >
               {status.msg}
             </div>
@@ -290,7 +281,7 @@ export default function ProfilePage() {
             <Button
               onClick={handleSave}
               disabled={!dirty || saving}
-              className={cn(!dirty || saving ? "opacity-90" : "")}
+              className={`${(!dirty || saving) && "opacity-90"}`}
             >
               {saving ? (
                 <>

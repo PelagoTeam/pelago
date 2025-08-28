@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthProfileContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -14,7 +13,14 @@ import {
   HoverCardTrigger,
   HoverCardContent,
 } from "@/components/ui/hover-card";
-import { Check, Loader2, Menu } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  Loader2,
+  Menu,
+  MessageSquareText,
+  Trophy,
+} from "lucide-react";
 import CoursePickerPage from "@/components/SignUp/RegisterCourse";
 import RequireAuth from "@/components/RequireAuth";
 import {
@@ -25,30 +31,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-
-function NavItem({ href, label }: { href: string; label: string }) {
-  const pathname = usePathname();
-  const isActive =
-    pathname === href ||
-    (href === "/home/practice" &&
-      (pathname === "/home" || pathname === "/home/"));
-
-  return (
-    <Link
-      href={href}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
-        isActive
-          ? "bg-primary text-primary-foreground shadow"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent",
-      )}
-    >
-      {label}
-    </Link>
-  );
-}
 
 type Course = {
   icon_url: string;
@@ -68,6 +50,7 @@ export default function HomeLayout({
   const [currentCourse, setCurrentCourse] = useState<Course>();
   const [loading, setLoading] = useState(false);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -94,6 +77,16 @@ export default function HomeLayout({
     };
     fetchIcon();
   }, [profile, supabase]);
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth >= 640) {
+        setOpen(false);
+      }
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (!profile && user && !authLoading) return <CoursePickerPage />;
 
@@ -144,16 +137,118 @@ export default function HomeLayout({
   return (
     <RequireAuth>
       <div className="flex flex-col w-full h-full">
-        <header className=" border-2 sticky top-0 z-40 px-5 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex justify-between items-center px-4 h-16">
-            <div className="flex gap-6 justify-between items-center w-full">
-              <h1 className="flex-1 text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Pelago
-              </h1>
+        <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/55">
+          <div className="mx-auto max-w-screen-2xl px-4">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex flex-1 items-center justify-left">
+                <div className="px-3 py-2 mx-auto max-w-screen-xl flex flex-col items-center justify-center md:hidden">
+                  <Sheet open={open} onOpenChange={setOpen}>
+                    <SheetTrigger asChild>
+                      <Menu className="w-5 h-5" />
+                    </SheetTrigger>
 
-              {/* Desktop nav */}
+                    <SheetContent
+                      side="left"
+                      className="px-4 w-[250px] flex flex-col justify-between"
+                    >
+                      <div>
+                        <SheetHeader className="items-start gap-1">
+                          <SheetTitle className="text-left">
+                            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                              Pelago
+                            </span>
+                          </SheetTitle>
+                          <p className="text-xs text-muted-foreground">
+                            Learn • Chat • Compete
+                          </p>
+                        </SheetHeader>
 
-              <div className="hidden sm:flex flex-1 justify-center">
+                        {user && currentCourse && (
+                          <div className="mt-4 flex items-center gap-3 rounded-xl border p-3">
+                            <Avatar className="w-10 h-10 ring-1 ring-border">
+                              <AvatarImage
+                                src={currentCourse.icon_url}
+                                alt={currentCourse.language}
+                              />
+                              <AvatarFallback className="bg-muted text-foreground">
+                                {currentCourse.language}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {profile?.username ?? user.email}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate">
+                                {currentCourse.language}
+                              </div>
+                            </div>
+                            <div className="ml-auto">
+                              <Avatar className="w-8 h-8 ring-1 ring-border">
+                                <AvatarImage src={undefined} alt="avatar" />
+                                <AvatarFallback className="bg-muted text-foreground">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Nav */}
+                        <nav className="mt-4 space-y-5">
+                          <div className="space-y-1">
+                            <h4 className="px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Learn
+                            </h4>
+                            <div className="grid gap-1.5">
+                              <MobileNavItem
+                                href="/home"
+                                label="Practice"
+                                Icon={BookOpen}
+                              />
+                              <MobileNavItem
+                                href="/home/conversation"
+                                label="Conversation"
+                                Icon={MessageSquareText}
+                              />
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          <div className="space-y-1">
+                            <h4 className="px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Compete
+                            </h4>
+                            <div className="grid gap-1.5">
+                              <MobileNavItem
+                                href="/home/leaderboard"
+                                label="Leaderboard"
+                                Icon={Trophy}
+                              />
+                            </div>
+                          </div>
+                        </nav>
+                      </div>
+                      {/* Footer */}
+                      <footer className="mt-6 pt-4 border-t mb-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">
+                            v1.0
+                          </span>
+                        </div>
+                      </footer>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+                <Link
+                  href="/home"
+                  className="flex-1 text-xl font-semibold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
+                >
+                  <h1>Pelago</h1>
+                </Link>
+              </div>
+
+              <div className="hidden md:flex flex-1 justify-center">
                 <div className="bg-primary/10 flex gap-2 rounded-xl ring-1 items-center py-1 px-2 ring-primary/20 justify-center ">
                   {user && !loading && currentCourse ? (
                     <HoverCard openDelay={120} closeDelay={80}>
@@ -188,20 +283,17 @@ export default function HomeLayout({
                                 type="button"
                                 onClick={() => switchCourse(c)}
                                 disabled={isBusy}
-                                className={cn(
-                                  "group relative flex flex-col items-center gap-1 rounded-lg border p-2 transition",
-                                  "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                  isActive
-                                    ? "border-primary/50 bg-primary/5"
-                                    : "border-border",
-                                )}
+                                className={`group relative flex flex-col items-center gap-1 rounded-lg border p-2 transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+                                  ${
+                                    isActive
+                                      ? "border-primary/50 bg-primary/5"
+                                      : "border-border"
+                                  }
+                                `}
                                 title={c.language}
                               >
                                 <Avatar
-                                  className={cn(
-                                    "h-10 w-10 ring-1 ring-border",
-                                    isActive && "ring-primary/60",
-                                  )}
+                                  className={`h-10 w-10 ring-1 ring-border ${isActive && "ring-primary/60"}`}
                                 >
                                   <AvatarImage
                                     src={c.icon_url}
@@ -238,42 +330,6 @@ export default function HomeLayout({
                   </nav>
                 </div>
               </div>
-              {/* Mobile nav */}
-              <div className="container py-2 px-4 mx-auto max-w-screen-xl sm:hidden">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="rounded-xl"
-                      aria-label="Open menu"
-                    >
-                      <Menu className="w-5 h-5" />
-                    </Button>
-                  </SheetTrigger>
-
-                  <SheetContent side="left" className="p-4">
-                    <SheetHeader>
-                      <SheetTitle>Menu</SheetTitle>
-                    </SheetHeader>
-
-                    <nav className="grid gap-2 mt-4">
-                      <SheetClose asChild>
-                        <NavItem href="/home" label="Practice" />
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <NavItem
-                          href="/home/conversation"
-                          label="Conversation"
-                        />
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <NavItem href="/home/leaderboard" label="Leaderboard" />
-                      </SheetClose>
-                    </nav>
-                  </SheetContent>
-                </Sheet>
-              </div>
 
               <div className="flex gap-3 items-center flex-1 justify-end">
                 {user && !loading && currentCourse ? (
@@ -293,7 +349,7 @@ export default function HomeLayout({
                         </Avatar>
                       </HoverCardTrigger>
                       <HoverCardContent
-                        align="center"
+                        align="end"
                         side="bottom"
                         className="p-3 w-auto border bg-card"
                       >
@@ -327,10 +383,87 @@ export default function HomeLayout({
               </div>
             </div>
           </div>
+          <div className="pointer-events-none h-px w-full bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
         </header>
 
         <div className="flex-1 py-6 min-h-0">{children}</div>
       </div>
     </RequireAuth>
+  );
+}
+
+function NavItem({ href, label }: { href: string; label: string }) {
+  const pathname = usePathname();
+  const isActive =
+    pathname === href ||
+    (href === "/home/practice" &&
+      (pathname === "/home" || pathname === "/home/"));
+
+  return (
+    <Link
+      href={href}
+      aria-current={isActive ? "page" : undefined}
+      className={`group relative inline-flex items-center rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background 
+        ${
+          isActive
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-foreground/70 hover:text-foreground hover:bg-background/60"
+        }
+      `}
+    >
+      <span>{label}</span>
+      <span className="pointer-events-none absolute -bottom-[6px] left-4 right-4 h-0.5 origin-left scale-x-0 rounded-full bg-current opacity-0 transition-all duration-200 ease-out group-hover:opacity-80 group-hover:scale-x-100" />
+    </Link>
+  );
+}
+
+function MobileNavItem({
+  href,
+  label,
+  Icon,
+}: {
+  href: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  const pathname = usePathname();
+  const active = pathname === href;
+
+  return (
+    <SheetClose asChild>
+      <Link
+        href={href}
+        aria-current={active ? "page" : undefined}
+        className={`group flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+          ${
+            active
+              ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+              : "hover:bg-muted text-foreground/90"
+          }
+        `}
+      >
+        <span className="flex items-center gap-3 min-w-0">
+          <span
+            className={`rounded-lg p-1.5 ${active ? "bg-primary/15" : "bg-muted"}`}
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+          <span className="text-sm font-medium truncate">{label}</span>
+        </span>
+        <svg
+          className={`h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100 ${active && "opacity-100"}`}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </Link>
+    </SheetClose>
   );
 }

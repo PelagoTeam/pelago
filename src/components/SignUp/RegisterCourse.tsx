@@ -90,8 +90,8 @@ export default function CoursePickerPage() {
       const { error: ucErr } = await supabase.from("user_courses").upsert({
         user_id: user.id,
         course_id: selectedCourse.course_id,
-        module: 0,
-        stage: 0,
+        module_number: 0,
+        stage_number: 0,
       });
 
       if (ucErr) throw ucErr;

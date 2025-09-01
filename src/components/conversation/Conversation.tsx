@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,9 @@ import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
 import ConversationHistory from "./ConversationHistory";
+import LiveSTT from "./LiveSpeechToText/STT";
+import { buildWsUrlFromProfile } from "@/lib/languages";
+import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 
 type Conversation = {
   topic: string;
@@ -36,6 +39,24 @@ type AssistantMessage = {
   content: string;
 };
 
+type LiveSTTHandle = {
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+  retake: () => void; // clears preview/transcripts
+  setDevice: (deviceId: string) => Promise<void>;
+  setLang: (code: string) => void; // future streams will use this
+};
+
+type Audio = {
+  blob: Blob;
+  meta: {
+    durationMs: number;
+    mime: string;
+    size: number;
+    peakDb?: number;
+  };
+};
+
 export default function Conversation({
   conversation_id,
 }: {
@@ -43,9 +64,12 @@ export default function Conversation({
 }) {
   const [conversation, setConversation] = useState<Conversation | undefined>();
   const [showHistory, setShowHistory] = useState(false);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState("test");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const sttRef = useRef<LiveSTTHandle>(null);
+  const [recordBlob, setRecordBlob] = useState<Audio | null>(null);
+  const [lang, setLang] = useState("en-US");
 
   const { profile, loading: authLoading } = useAuth();
 
@@ -201,6 +225,9 @@ export default function Conversation({
       if (!loading && input.trim()) send();
     }
   };
+
+  const wsUrl = buildWsUrlFromProfile(profile);
+
   return (
     <div className="relative h-full w-full rounded-xl border bg-background shadow-sm">
       <div className="absolute right-3 top-3 z-10">
@@ -219,14 +246,27 @@ export default function Conversation({
         <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
           <div className="p-3">
             <div className="flex items-end gap-3">
-              <Textarea
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                }}
-                onKeyDown={onKeyDown}
-                placeholder="Type your message…"
-                className="max-w-full h-9 min-h-9 resize-none"
+              {recordBlob ? (
+                <AudioPlayer src={URL.createObjectURL(recordBlob.blob)} />
+              ) : (
+                <Textarea
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                  }}
+                  onKeyDown={onKeyDown}
+                  placeholder="Type your message…"
+                  className="max-w-full h-9 min-h-9 resize-none"
+                />
+              )}
+              <LiveSTT
+                ref={sttRef}
+                lang={lang}
+                wsUrl={wsUrl}
+                onPartial={(t) => setInput(t)}
+                onFinal={(t) => setInput(t)}
+                onRecordingReady={(b) => setRecordBlob(b)}
+                onError={(e) => console.error(e)}
               />
               <Button onClick={send} disabled={loading} size="icon">
                 <SendIcon className="h-4 w-4" />

@@ -16,6 +16,7 @@ type UserMessage = {
   pending: boolean;
   content: string;
   remarks: string;
+  audio_url?: string;
 };
 
 type AssistantMessage = {
@@ -54,6 +55,8 @@ export default function ConversationHistory({
     });
     return () => cancelAnimationFrame(raf);
   }, [conversation?.messages.length, loading]);
+
+  console.log(conversation);
 
   return (
     <Card className="flex flex-col w-full h-full">
@@ -121,9 +124,14 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
         </HoverCardTrigger>
         <HoverCardContent>{message.remarks}</HoverCardContent>
       </HoverCard>
-      <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
-        {message.content}
-      </div>
+      {/* TODO: display audio */}
+      {message.audio_url !== "NULL" ? (
+        <p>audio</p>
+      ) : (
+        <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
+          {message.content}
+        </div>
+      )}
     </div>
   );
 }

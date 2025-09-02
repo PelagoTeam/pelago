@@ -38,7 +38,8 @@ export function buildWsUrlFromProfile(
   const baseWsUrl = process.env.NEXT_PUBLIC_STT_WS_URL;
   const code = resolveTranscribeCode(profile?.language);
   if (code) {
-    return `${baseWsUrl}?language=${encodeURIComponent(code)}`;
+    // return `${baseWsUrl}?language=${encodeURIComponent(code)}`;
+    return `${baseWsUrl}?language=en-US`;
   }
   // fallback
   return `${baseWsUrl}?language=${encodeURIComponent("en-US")}`;

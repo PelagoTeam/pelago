@@ -1,5 +1,13 @@
-import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
+import { Mic, Trash } from "lucide-react";
 
 // -------- Types
 export type LiveSttState =
@@ -28,15 +36,6 @@ export type LiveSttError = {
   message: string;
   details?: unknown;
 };
-export type SttMeta = { startMs?: number; endMs?: number; isFinal?: boolean };
-export type SttSegment = { text: string; startMs: number; endMs: number };
-export type LiveSttMetrics = {
-  rttMs?: number;
-  meanFrameIntervalMs?: number;
-  droppedFrames?: number;
-  wsBufferedBytes?: number;
-  reconnects?: number;
-};
 
 type RecordingReadyPayload = {
   blob: Blob;
@@ -49,38 +48,33 @@ type RecordingReadyPayload = {
 } | null;
 
 export type LiveSTTProps = {
-  // Config
-  lang: string; // e.g., "en-US"
-  wsUrl?: string; // if omitted, will use env NEXT_PUBLIC_STT_WS_URL
+  wsUrl: string;
   deviceId?: string | null;
   prebufferMs?: number; // default 4000
   frameMs?: number; // default 20
   sampleRate?: 16000 | 48000; // target PCM sample rate for STT; default 16000
   vad?: { enabled: boolean; thresholdDb: number; minVoiceMs: number } | null;
-  autostart?: boolean;
   showWaveform?: boolean;
-  showTimer?: boolean;
 
   // Outputs
+  setUsingAudio: (usingAudio: boolean) => void;
   onReady?: () => void;
   onStateChange?: (s: LiveSttState) => void;
   onPermission?: (granted: boolean) => void;
   onConnectionChange?: (
     status: "connecting" | "open" | "closing" | "closed" | "error",
   ) => void;
-  onPartial?: (text: string, meta?: SttMeta) => void;
-  onFinal?: (text: string, meta?: SttMeta) => void;
-  onSummary?: (fullText: string, segments: SttSegment[]) => void;
+  setRecordedAudioTranscribe: Dispatch<
+    SetStateAction<{ text: string; meta: { isPartial: boolean } } | null>
+  >;
   onRecordingReady: (payload: RecordingReadyPayload) => void;
   onError?: (err: LiveSttError) => void;
-  onMetrics?: (m: LiveSttMetrics) => void;
 };
 
 export type LiveSTTHandle = {
   start: () => Promise<void>;
   stop: () => Promise<void>;
   setDevice: (deviceId: string) => Promise<void>;
-  setLang: (code: string) => void;
 };
 
 // -------- Small transport queue for PCM frames
@@ -233,32 +227,26 @@ function* backoffSeq(base = 300, max = 5000) {
 
 const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   {
-    lang,
     wsUrl,
     deviceId,
     prebufferMs = 4000,
     frameMs = 20,
     sampleRate = 16000,
     vad = null,
-    autostart = false,
-    showTimer = true,
+    setUsingAudio,
     onReady,
     onStateChange,
     onPermission,
     onConnectionChange,
-    onPartial,
-    onFinal,
-    onSummary,
+    setRecordedAudioTranscribe,
     onRecordingReady,
     onError,
-    onMetrics,
   },
   ref,
 ) {
   const [state, setState] = useState<LiveSttState>("idle");
-  const [elapsedMs, setElapsedMs] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [peakDb, setPeakDb] = useState<number | undefined>(undefined);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectsRef = useRef(0);
@@ -267,8 +255,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const stopMediaRef = useRef<(() => Promise<Blob>) | null>(null);
   const tickTimerRef = useRef<number | null>(null);
-  const segmentsRef = useRef<SttSegment[]>([]);
-  const startingRef = useRef(false);
   const stateRef = useRef<LiveSttState>("idle");
 
   // Imperative API
@@ -279,10 +265,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
       await stop();
       return start(id);
     },
-    setLang: (code: string) => {
-      // Language is applied when building WS URL next start
-      console.debug("LiveSTT lang set to", code);
-    },
   }));
 
   function setSt(s: LiveSttState) {
@@ -292,26 +274,14 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     onStateChange?.(s);
   }
 
-  function currentWsUrl() {
-    const base = wsUrl;
-    if (!base) throw new Error("STT WS URL is not configured");
-    const url = new URL(base);
-    url.searchParams.set("language", lang);
-    return url.toString();
-  }
-
   async function start(requestedDeviceId?: string) {
-    if (startingRef.current) return;
-    startingRef.current = true;
     if (
       stateRef.current === "recording" ||
       stateRef.current === "streaming" ||
       stateRef.current === "connecting"
     )
       return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-    segmentsRef.current = [];
+    setUsingAudio(true);
     pcmQueueRef.current.clear();
 
     setSt("requesting");
@@ -364,11 +334,9 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
 
     // Open WebSocket
     openWebSocket(/*isReconnect*/ false);
-    startingRef.current = false;
   }
 
   function openWebSocket(isReconnect: boolean) {
-    const url = currentWsUrl();
     try {
       onConnectionChange?.("connecting");
       setSt(
@@ -379,7 +347,7 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
             : stateRef.current,
       );
 
-      const ws = new WebSocket(url);
+      const ws = new WebSocket(wsUrl);
       ws.binaryType = "arraybuffer";
       ws.onopen = () => {
         reconnectsRef.current += isReconnect ? 1 : 0;
@@ -397,16 +365,12 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
         // Expect JSON messages for transcripts
         try {
           const msg = JSON.parse(ev.data);
-          if (msg.isPartial === true && msg.text)
-            onPartial?.(msg.text, { isFinal: false });
-          if (msg.isPartial === false && msg.text) {
-            onFinal?.(msg.text, { isFinal: true });
-            const now = elapsedMs;
-            segmentsRef.current.push({
-              text: msg.text,
-              startMs: Math.max(0, now - 2000),
-              endMs: now,
-            });
+          console.log(msg);
+          if (msg.isPartial === false) {
+            setRecordedAudioTranscribe((prev) => ({
+              text: prev ? prev.text + " " + msg.text : msg.text,
+              meta: { isPartial: msg.isPartial },
+            }));
           }
         } catch {}
       };
@@ -450,7 +414,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     // Backpressure guard
     if (ws.bufferedAmount > 1_000_000) return; // ~1MB pending, skip
     ws.send(frame);
-    onMetrics?.({ wsBufferedBytes: ws.bufferedAmount });
   }
 
   function onPcmFrame(frame: ArrayBuffer) {
@@ -485,19 +448,12 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     setSt("stopped");
 
     if (blob) {
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
       const durationMs = await estimateDurationMs(blob);
       onRecordingReady({
         blob,
         meta: { durationMs, mime, size: blob.size, peakDb },
       });
     }
-
-    onSummary?.(
-      segmentsRef.current.map((s) => s.text).join(" "),
-      segmentsRef.current,
-    );
   }
 
   useEffect(() => {
@@ -510,7 +466,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
         stopPcmRef.current?.();
       } catch {}
       if (tickTimerRef.current) window.clearInterval(tickTimerRef.current);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -521,52 +476,49 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   }, [frameMs, prebufferMs]);
 
   const handleCancel = () => {
+    setElapsedMs(0);
+    setUsingAudio(false);
+    setRecordedAudioTranscribe(null);
     onRecordingReady(null);
     stateRef.current = "idle";
     setSt("idle");
   };
-  // ---------- UI (minimal, clean)
-  return (
-    <div className="rounded-2xl border p-4 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          State: <span className="font-medium text-foreground">{state}</span>
-        </div>
-        {showTimer && (
-          <div className="text-sm tabular-nums">{formatTime(elapsedMs)}</div>
-        )}
-      </div>
 
-      <div className="mt-4 flex items-center gap-3">
-        {stateRef.current === "idle" || stateRef.current === "stopped" ? (
+  return (
+    <div className="flex items-center justify-between gap-4">
+      {/* <div className="text-sm text-muted-foreground">
+          State: <span className="font-medium text-foreground">{state}</span>
+        </div> */}
+
+      {stateRef.current === "streaming" && (
+        <div className="text-sm tabular-nums">{formatTime(elapsedMs)}</div>
+      )}
+
+      <div className="flex items-center justify-center gap-3">
+        {stateRef.current === "idle" ? (
           <Button
             className="rounded-2xl px-4 py-2 bg-primary text-primary-foreground shadow hover:opacity-90"
             onClick={() => start()}
           >
-            Record
+            <Mic className="h-4 w-4" />
           </Button>
-        ) : stateRef.current === "recording" ||
-          stateRef.current === "connecting" ||
-          stateRef.current === "streaming" ||
-          stateRef.current === "reconnecting" ? (
-          <button
-            className="rounded-2xl px-4 py-2 bg-destructive text-destructive-foreground shadow hover:opacity-90"
-            onClick={() => stop()}
-            type="button"
-          >
-            Stop
-          </button>
         ) : (
-          <button
-            className="rounded-2xl px-4 py-2 bg-primary text-primary-foreground shadow"
-            onClick={() => start()}
-            type="button"
-          >
-            Record
-          </button>
+          (stateRef.current === "recording" ||
+            stateRef.current === "connecting" ||
+            stateRef.current === "streaming" ||
+            stateRef.current === "reconnecting") && (
+            <Button
+              className="rounded-2xl px-4 py-2 bg-destructive text-destructive-foreground shadow hover:opacity-90"
+              onClick={() => stop()}
+            >
+              Stop
+            </Button>
+          )
         )}
         {stateRef.current === "stopped" && (
-          <Button onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleCancel}>
+            <Trash className="h-4 w-4" />
+          </Button>
         )}
       </div>
     </div>

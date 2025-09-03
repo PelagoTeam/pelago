@@ -49,9 +49,9 @@ export async function POST(req: NextRequest) {
       role: "assistant",
       content: `${response.native}\n${response.romanization}\n${response.english}`,
       user_id: user.id,
+      emotion: response.emotion,
     },
   ];
-  console.log(rows);
 
   const { data, error } = await supabase
     .from("messages")
@@ -96,27 +96,66 @@ async function generateResponse({
   username?: string;
   history: { role: "user" | "assistant"; content: string }[];
 }) {
-  const prompt = `
-You are a friendly ${language} conversation partner in a short role-play.
-Theme: ${title}. User: ${username ?? "Learner"}. Level: ${difficulty}.
+  const recent = (history ?? [])
+    .slice(-6)
+    .map((m) => `${m.role === "user" ? "student" : "partner"}: ${m.content}`)
+    .join("\n");
 
-Continue naturally in ${language}, no teaching tips or meta. End with ONE inviting question.
-`;
+  const lastStudentUtterance =
+    [...(history ?? [])].reverse().find((m) => m.role === "user")?.content ??
+    "";
+
+  // System prompt (rules), same structure as generateRemarks
+  const system = `
+You are a friendly ${language} conversation partner running a short role-play (theme: "${title}").
+User: ${username ?? "Learner"}. Level: ${difficulty}.
+
+Write ONLY the next assistant turn, following these rules:
+- Speak naturally in ${language}.
+- End with EXACTLY ONE inviting question.
+- No meta-teaching or explanations in the reply.
+
+Also choose ONE emotion tag for the NEXT scene UI:
+- straight-face
+- shocked
+- friendly
+
+Output JSON ONLY with fields:
+- native: reply in ${language}
+- romanization: romanized reply ("" if not applicable)
+- english: faithful English translation
+- emotion: one of "straight-face" | "shocked" | "friendly"
+
+No markdown, no extra fields.
+`.trim();
+
+  const userPrompt = `
+Conversation so far (latest last):
+${recent || "(no prior turns)"}
+
+Student's latest reply:
+${lastStudentUtterance || "(none)"}
+`.trim();
 
   const { object } = await generateObject({
-    model: model,
-    system: prompt,
-    messages: history,
+    model,
+    system,
+    prompt: userPrompt,
     mode: "json",
     schema: z.object({
-      native: z.string(),
-      romanization: z.string(),
-      english: z.string(),
+      native: z.string().min(1).max(500),
+      romanization: z.string().max(700).optional().default(""),
+      english: z.string().min(1).max(700),
+      emotion: z.enum(["straight-face", "shocked", "friendly"]),
     }),
   });
 
-  console.log("generateResponse:", object);
+  if (!["straight-face", "shocked", "friendly"].includes(object.emotion)) {
+    object.emotion = "straight-face";
+    console.log("Emotion straight face fall back used.");
+  }
 
+  console.log("generateResponse:", object);
   return object;
 }
 
@@ -137,27 +176,57 @@ async function generateRemarks({
     .map((m) => `${m.role === "user" ? "student" : "partner"}: ${m.content}`)
     .join("\n");
 
-  const prompt = `
-You are a friendly ${language} language teacher teaching ${language} at ${difficulty} level.
-Your student is in a short role-play session with a partner.
-The theme of the role-play is "${title}".
-Your task is to give remarks on your student's response to their partner.
-Give useful advice to help your student improve, keep it to 50 words maximum.
+  const system = `
+You are a friendly ${language} teacher coaching a ${difficulty} learner during a short role-play (theme: "${title}").
+Write concise feedback on the student's **latest reply** only.
+Requirements:
+- 1-2 actionable tips.
+- Reference actual errors/opportunities (tone, vocab, grammar, politeness) relevant to ${language}.
+- **Maximum 50 words.**
+- No markdown, no preambles, no emojis, no extra fields.
+- Output JSON ONLY.
+`.trim();
 
-Conversation so far:
-${recent}
-`;
+  const lastStudentUtterance =
+    [...history].reverse().find((m) => m.role === "user")?.content ?? "";
+
+  const userPrompt = `
+Conversation (latest last):
+${recent || "(no prior turns)"}
+
+Student’s latest reply:
+${lastStudentUtterance || "(none)"}
+`.trim();
 
   const { object } = await generateObject({
     model: model,
-    prompt: prompt,
+    system: system,
+    prompt: userPrompt,
     mode: "json",
     schema: z.object({
-      remarks: z.string(),
+      remarks: z.string().max(400, "Keep the feedback brief."),
     }),
   });
 
   console.log("generateResponse:", object);
 
-  return object;
+  const capWords = (s: string, maxWords = 50) => {
+    const words = s.trim().split(/\s+/);
+    if (words.length <= maxWords) return s.trim();
+    return (
+      words
+        .slice(0, maxWords)
+        .join(" ")
+        .replace(/[,.!?;:]*$/, "") + "…"
+    );
+  };
+
+  const sanitized = (object?.remarks ?? "")
+    .replace(/`+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const remarks = capWords(sanitized, 50);
+
+  return { remarks };
 }

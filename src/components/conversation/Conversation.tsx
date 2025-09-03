@@ -39,6 +39,7 @@ type AssistantMessage = {
   role: "assistant";
   pending: boolean;
   content: string;
+  emotion: string;
 };
 
 type LiveSTTHandle = {
@@ -176,6 +177,7 @@ export default function Conversation({
             pending: false,
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
+            emotion: data.emotion,
           },
         ],
       };
@@ -266,6 +268,7 @@ export default function Conversation({
             pending: false,
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
+            emotion: data.emotion,
           },
         ],
       };
@@ -424,7 +427,7 @@ async function getConversation(
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("message_id, role, content, remarks, audio_url")
+    .select("message_id, role, content, remarks, audio_url, emotion")
     .eq("conversation_id", conversation_id)
     .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
@@ -449,6 +452,7 @@ async function getConversation(
       content: message.content,
       remarks: message.remarks,
       audio_url: message.audio_url,
+      emotion: message.emotion,
       pending: false,
     })),
   };

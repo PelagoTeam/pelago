@@ -24,6 +24,7 @@ type AssistantMessage = {
   role: "assistant";
   pending: boolean;
   content: string;
+  emotion: string;
 };
 
 type Conversation = {
@@ -56,8 +57,6 @@ export default function ConversationHistory({
     return () => cancelAnimationFrame(raf);
   }, [conversation?.messages.length, loading]);
 
-  console.log(conversation);
-
   return (
     <Card className="flex flex-col w-full h-full">
       <CardHeader>
@@ -81,6 +80,7 @@ export default function ConversationHistory({
                 role: "assistant",
                 content: "...",
                 pending: true,
+                emotion: "...",
               }}
             />
           )}
@@ -125,7 +125,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
         <HoverCardContent>{message.remarks}</HoverCardContent>
       </HoverCard>
       {/* TODO: display audio */}
-      {message.audio_url !== "NULL" ? (
+      {message.audio_url ? (
         <p>audio</p>
       ) : (
         <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">

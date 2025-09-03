@@ -100,21 +100,26 @@ export default function HomeLayout({
     if (!profile || switchingId === course.course_id) return;
     try {
       setSwitchingId(course.course_id);
-      const { error } = await supabase
-        .from("users")
-        .update({ current_course: course.course_id, language: course.language })
-        .eq("user_id", profile.user_id);
-      const { error: ucErr } = await supabase.from("user_courses").upsert(
-        {
-          user_id: profile.user_id,
-          course_id: course.course_id,
-          module_number: 0,
-          stage_number: 0,
-        },
-        {
-          ignoreDuplicates: true,
-        },
-      );
+      const [error, ucErr] = await Promise.all([
+        supabase
+          .from("users")
+          .update({
+            current_course: course.course_id,
+            language: course.language,
+          })
+          .eq("user_id", profile.user_id),
+        supabase.from("user_courses").upsert(
+          {
+            user_id: profile.user_id,
+            course_id: course.course_id,
+            module_number: 0,
+            stage_number: 0,
+          },
+          {
+            ignoreDuplicates: true,
+          },
+        ),
+      ]);
 
       if (error || ucErr) throw error || ucErr;
       const next = availableCourses.find(

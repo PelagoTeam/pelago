@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,10 @@ import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
 import ConversationHistory from "./ConversationHistory";
+import LiveSTT from "./LiveSpeechToText/STT";
+import { buildWsUrlFromProfile } from "@/lib/languages";
+import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
+import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
 
 type Conversation = {
   topic: string;
@@ -27,6 +31,7 @@ type UserMessage = {
   pending: boolean;
   content: string;
   remarks: string;
+  audio_url?: string;
 };
 
 type AssistantMessage = {
@@ -34,6 +39,24 @@ type AssistantMessage = {
   role: "assistant";
   pending: boolean;
   content: string;
+};
+
+type LiveSTTHandle = {
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+  retake: () => void; // clears preview/transcripts
+  setDevice: (deviceId: string) => Promise<void>;
+  setLang: (code: string) => void; // future streams will use this
+};
+
+type Audio = {
+  blob: Blob;
+  meta: {
+    durationMs: number;
+    mime: string;
+    size: number;
+    peakDb?: number;
+  };
 };
 
 export default function Conversation({
@@ -46,6 +69,15 @@ export default function Conversation({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Audio related use states
+  const [usingAudio, setUsingAudio] = useState(false);
+  const [recordBlob, setRecordBlob] = useState<Audio | null>(null);
+  const [recordedAudioTranscribe, setRecordedAudioTranscribe] = useState<{
+    text: string;
+    meta: { isPartial: boolean };
+  } | null>(null);
+  const sttRef = useRef<LiveSTTHandle>(null);
 
   const { profile, loading: authLoading } = useAuth();
 
@@ -67,7 +99,105 @@ export default function Conversation({
     };
   }, [conversation_id, profile, authLoading]);
 
-  async function send() {
+  async function sendFromAudio() {
+    if (!recordBlob || !profile || !conversation || !recordedAudioTranscribe)
+      return;
+
+    const prevConversation = conversation;
+    const prevRecordedAudioTranscribe = recordedAudioTranscribe;
+    const prevBlob = recordBlob;
+    const transcript = recordedAudioTranscribe.text.trim();
+
+    setLoading(true);
+
+    // optimistic: add pending user message (audio)
+    const optimisticUser: Message = {
+      message_id: "PLACEHOLDER_ID",
+      role: "user",
+      pending: true,
+      content: transcript,
+      audio_url: "...",
+      remarks: "...",
+    };
+    const optimisticConversation: Conversation = {
+      ...conversation,
+      messages: [...conversation.messages, optimisticUser],
+    };
+    setConversation((conversation) =>
+      conversation ? optimisticConversation : conversation,
+    );
+    setRecordedAudioTranscribe(null);
+    setRecordBlob(null);
+
+    try {
+      const supabase = createClient();
+      // 1) upload and get signed/public URL
+      const { audio_url } = await uploadRecordingAndGetUrl({
+        supabase,
+        blob: recordBlob.blob,
+        userId: profile.user_id,
+        conversationId: conversation_id,
+      });
+
+      // 2) call LLM with transcript + audioUrl
+      const res = await fetch("/api/chat/audio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          theme: optimisticConversation.topic,
+          username: profile.username,
+          history: optimisticConversation.messages,
+          conversation_id: conversation_id,
+          audio_url: audio_url,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.error) {
+        setError("An error has occurred. Please refresh and try again.");
+      }
+
+      // finalize optimistic user message
+      optimisticUser.remarks = data.remarks;
+      optimisticUser.pending = false;
+      optimisticUser.message_id = data.messageIds.user;
+      optimisticUser.audio_url = audio_url;
+
+      const newConversation: Conversation = {
+        ...optimisticConversation,
+        messages: [
+          ...optimisticConversation.messages,
+          {
+            message_id: data.messageIds.assistant,
+            role: "assistant",
+            pending: false,
+            content:
+              data.native + "\n" + data.romanization + "\n" + data.english,
+          },
+        ],
+      };
+      setConversation((conversation) =>
+        conversation ? newConversation : conversation,
+      );
+
+      // optional: clear audio/transcript states
+      // setRecordBlob(null); setRecordedAudioTranscribe(null);
+    } catch (e) {
+      console.error("sendFromAudio failed", e);
+      // rollback (simple): remove the optimistic item
+      setConversation(prevConversation);
+      setRecordedAudioTranscribe(prevRecordedAudioTranscribe);
+      setRecordBlob(prevBlob);
+      setInput(input);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function sendFromText() {
     if (!input.trim()) {
       return;
     }
@@ -157,9 +287,33 @@ export default function Conversation({
     }
   }
 
+  async function send() {
+    if (loading) return;
+    setLoading(true);
+    setError("");
+
+    if (usingAudio && recordBlob) {
+      await sendFromAudio();
+      return;
+    }
+    await sendFromText();
+  }
+
   const handleShowHistory = () => {
     setShowHistory(!showHistory);
   };
+
+  const wsUrl = buildWsUrlFromProfile(profile);
+  const url = useMemo(
+    () => (recordBlob ? URL.createObjectURL(recordBlob.blob) : null),
+    [recordBlob],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
 
   if (!conversation) {
     return (
@@ -201,6 +355,7 @@ export default function Conversation({
       if (!loading && input.trim()) send();
     }
   };
+
   return (
     <div className="relative h-full w-full rounded-xl border bg-background shadow-sm">
       <div className="absolute right-3 top-3 z-10">
@@ -215,18 +370,30 @@ export default function Conversation({
             Chat area (placeholder)
           </div>
         </div>
-
         <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
           <div className="p-3">
-            <div className="flex items-end gap-3">
-              <Textarea
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                }}
-                onKeyDown={onKeyDown}
-                placeholder="Type your message…"
-                className="max-w-full h-9 min-h-9 resize-none"
+            <div className="flex items-center gap-3 justify-end">
+              {recordBlob && (
+                <AudioPlayer src={URL.createObjectURL(recordBlob.blob)} />
+              )}
+              {!usingAudio && (
+                <Textarea
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                  }}
+                  onKeyDown={onKeyDown}
+                  placeholder="Type your message…"
+                  className="max-w-full h-9 min-h-9 resize-none"
+                />
+              )}
+              <LiveSTT
+                setUsingAudio={setUsingAudio}
+                ref={sttRef}
+                wsUrl={wsUrl}
+                setRecordedAudioTranscribe={setRecordedAudioTranscribe}
+                onRecordingReady={(b) => setRecordBlob(b)}
+                onError={(e) => console.error(e)}
               />
               <Button onClick={send} disabled={loading} size="icon">
                 <SendIcon className="h-4 w-4" />
@@ -235,7 +402,6 @@ export default function Conversation({
           </div>
         </div>
       </div>
-
       {showHistory && (
         <div className="absolute top-12 right-3 w-[28rem] z-20 bg-background border rounded-xl shadow-lg overflow-hidden">
           <div className="h-[80vh] overflow-y-auto p-3">
@@ -258,7 +424,7 @@ async function getConversation(
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("message_id, role, content, remarks")
+    .select("message_id, role, content, remarks, audio_url")
     .eq("conversation_id", conversation_id)
     .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
@@ -282,6 +448,7 @@ async function getConversation(
       role: message.role,
       content: message.content,
       remarks: message.remarks,
+      audio_url: message.audio_url,
       pending: false,
     })),
   };

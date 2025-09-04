@@ -89,7 +89,6 @@ export default function Conversation({
       (async () => {
         const conv = await getConversation(conversation_id, profile);
         if (!disposed) {
-          console.log("ASYNC finished with", conversation_id);
           setConversation(conv);
         }
       })();
@@ -141,7 +140,7 @@ export default function Conversation({
       });
 
       // 2) call LLM with transcript + audioUrl
-      const res = await fetch("/api/chat/audio", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

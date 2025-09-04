@@ -7,7 +7,8 @@ import { createServer } from "@/lib/supabase/server";
 export const runtime = "edge"; // switch to "nodejs" if you use Node-only tools
 
 export async function POST(req: NextRequest) {
-  const { theme, username, history, conversation_id } = await req.json();
+  const { theme, username, history, conversation_id, audio_url } =
+    await req.json();
   const supabase = await createServer();
   const {
     data: { user },
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       content: history[history.length - 1].content,
       user_id: user.id,
       remarks: remarks.remarks,
+      audio_url: audio_url ?? null,
     },
     {
       conversation_id: conversation_id,

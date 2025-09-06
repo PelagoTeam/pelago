@@ -5,7 +5,13 @@ import { Theme } from "@/lib/types";
 import { z } from "zod";
 import { createServer } from "@/lib/supabase/server";
 
-export const runtime = "edge"; // or "nodejs"
+export const runtime = "nodejs";
+
+const StarterSchema = z.object({
+  native: z.string().min(1).max(200).default(""),
+  romanization: z.string().max(200).default(""),
+  english: z.string().min(1).max(200).default(""),
+});
 
 function buildStarterPrompt({
   theme,
@@ -32,9 +38,10 @@ function buildStarterPrompt({
   - Keep it simple and natural for the given difficulty.
   - No teaching tips, no example answers.
   - Do not give any dynamic values and expect me to fill it up, whatever you give me, I will be displaying to user.
-  Return ONLY a JSON object with exactly these fields:
-{ "native": string, "romanization": string, "english": string }
-`.trim();
+  Return JSON ONLY (no code fences or markdown). Start with "{" and end with "}".
+  Exact schema:
+  { "native": string, "romanization": string, "english": string }
+  `.trim();
 }
 
 export async function POST(req: NextRequest) {
@@ -62,19 +69,30 @@ export async function POST(req: NextRequest) {
   const prompt = buildStarterPrompt({ theme, username });
 
   console.log("generating", prompt);
-  const { object } = await generateObject({
-    model: model,
-    prompt: prompt,
-    mode: "json",
-    schema: z.object({
-      native: z.string(),
-      romanization: z.string(),
-      english: z.string(),
-    }),
-  });
+  let obj: { native: string; romanization: string; english: string };
+  try {
+    const { object } = await generateObject({
+      model: model,
+      prompt: prompt,
+      mode: "json",
+      schema: StarterSchema,
+    });
+    obj = object;
+  } catch (e: any) {
+    return NextResponse.json(
+      {
+        error: "Failed to parse model JSON output",
+        details: e?.message ?? String(e),
+      },
+      { status: 502 },
+    );
+  }
 
-  console.log("generatedStarterMessage", object);
-  console.log("saving...");
+  console.log("generatedStarterMessage", obj);
+
+  const native = normalize(obj.native);
+  const romanization = normalize(obj.romanization ?? "");
+  const english = normalize(obj.english);
 
   const { data: conv, error: convErr } = await supabase
     .from("conversations")
@@ -92,9 +110,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: convErr.message }, { status: 500 });
   }
 
-  const starting_text =
-    object.native + "\n" + object.romanization + "\n" + object.english;
-  console.log("text generted");
+  const starting_text = `${native}\n${romanization}\n${english}`;
 
   const { error: msgErr } = await supabase.from("messages").insert({
     conversation_id: conv.conversation_id,
@@ -106,7 +122,6 @@ export async function POST(req: NextRequest) {
   if (msgErr) {
     return NextResponse.json({ error: msgErr.message }, { status: 500 });
   }
-  console.log("message saved");
   return NextResponse.json(
     {
       conversation_id: conv.conversation_id,
@@ -114,3 +129,5 @@ export async function POST(req: NextRequest) {
     { status: 200 },
   );
 }
+
+const normalize = (s = "") => s.replace(/\s+/g, " ").trim();

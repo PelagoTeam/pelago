@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { model } from "@/lib/sealion";
 import { createServer } from "@/lib/supabase/server";
 
-export const runtime = "edge"; // switch to "nodejs" if you use Node-only tools
+export const runtime = "nodejs";
+
+const normalize = (s = "") => s.replace(/\s+/g, " ").trim();
 
 export async function POST(req: NextRequest) {
   const { theme, username, history, conversation_id, audio_url } =
@@ -120,7 +122,8 @@ Also choose ONE emotion tag for the NEXT scene UI:
 - shocked
 - friendly
 
-Output JSON ONLY with fields:
+Return JSON ONLY (no code fences or markdown). Start with "{" and end with "}".
+Exact schema:
 - native: reply in ${language}
 - romanization: romanized reply ("" if not applicable)
 - english: faithful English translation
@@ -184,7 +187,9 @@ Requirements:
 - Reference actual errors/opportunities (tone, vocab, grammar, politeness) relevant to ${language}.
 - **Maximum 50 words.**
 - No markdown, no preambles, no emojis, no extra fields.
-- Output JSON ONLY.
+Return JSON ONLY (no code fences or markdown). Start with "{" and end with "}".
+  Exact schema:
+  { "remarks": string }
 `.trim();
 
   const lastStudentUtterance =

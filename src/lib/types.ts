@@ -61,4 +61,5 @@ export type Theme = {
   prompt: string;
   culture_tips?: string;
   difficulty: "beginner" | "intermediate" | "advanced";
+  emotion: string;
 };

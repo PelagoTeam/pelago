@@ -35,9 +35,14 @@ function buildStarterPrompt({
 }) {
   return `
   You are a friendly ${theme.language} conversation partner in a short role-play.
-  Theme: ${theme.title}.
-  User: ${username ?? "Learner"}.
-  Learner level: ${theme.difficulty}.
+
+  Context:
+  - Theme: ${theme.title}.
+  - User: ${username ?? "Learner"}.
+  - Learner level: ${theme.difficulty}.
+  - Desired tone/emotion: ${theme.emotion}
+
+  ${theme.prompt}
 
   Objectives:
   - Open the conversation in ${theme.language} with 2-3 short, natural lines.
@@ -71,7 +76,7 @@ export async function POST(req: NextRequest) {
 
   const { data: theme, error: themeErr } = await supabase
     .from("themes")
-    .select("theme_id, title, language, prompt, difficulty")
+    .select("theme_id, title, language, prompt, difficulty, emotion")
     .eq("theme_id", themeId)
     .single();
 

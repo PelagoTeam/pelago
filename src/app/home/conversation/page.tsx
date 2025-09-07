@@ -46,7 +46,7 @@ export default function ConversationPage() {
       setLoadingThemes(true);
       const { data, error } = await supabase
         .from("themes")
-        .select("theme_id, title, language, prompt, difficulty")
+        .select("theme_id, title, language, prompt, difficulty, emotion")
         .eq("language", profile?.language)
         .order("title");
 

@@ -7,11 +7,24 @@ import { createServer } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+type RequestBody = {
+  themeId: string;
+  username: string;
+};
+
 const StarterSchema = z.object({
   native: z.string().min(1).max(200).default(""),
   romanization: z.string().max(200).default(""),
   english: z.string().min(1).max(200).default(""),
 });
+
+function getErrorMessage(e: unknown, fallback = "Unexpected error"): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "object" && e && "toString" in e) return String(e);
+  return fallback;
+}
+
+const normalize = (s = "") => s.replace(/\s+/g, " ").trim();
 
 function buildStarterPrompt({
   theme,
@@ -45,7 +58,7 @@ function buildStarterPrompt({
 }
 
 export async function POST(req: NextRequest) {
-  const { themeId, username } = await req.json();
+  const { themeId, username } = (await req.json()) as RequestBody;
   const supabase = await createServer();
 
   const {
@@ -56,11 +69,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: theme } = await supabase
+  const { data: theme, error: themeErr } = await supabase
     .from("themes")
     .select("theme_id, title, language, prompt, difficulty")
     .eq("theme_id", themeId)
     .single();
+
+  if (themeErr) {
+    return NextResponse.json({ error: themeErr.message }, { status: 500 });
+  }
 
   if (!theme) {
     return NextResponse.json({ error: "Theme not found" }, { status: 404 });
@@ -78,11 +95,11 @@ export async function POST(req: NextRequest) {
       schema: StarterSchema,
     });
     obj = object;
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
       {
         error: "Failed to parse model JSON output",
-        details: e?.message ?? String(e),
+        details: getErrorMessage(e),
       },
       { status: 502 },
     );
@@ -129,5 +146,3 @@ export async function POST(req: NextRequest) {
     { status: 200 },
   );
 }
-
-const normalize = (s = "") => s.replace(/\s+/g, " ").trim();

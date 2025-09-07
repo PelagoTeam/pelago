@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Trash } from "lucide-react";
+import { Loader2, Mic, Square, Trash } from "lucide-react";
 
 // -------- Types
 export type LiveSttState =
@@ -40,7 +40,6 @@ export type LiveSttError = {
 type RecordingReadyPayload = {
   blob: Blob;
   meta: {
-    durationMs: number;
     mime: string;
     size: number;
     peakDb?: number;
@@ -53,8 +52,6 @@ export type LiveSTTProps = {
   prebufferMs?: number; // default 4000
   frameMs?: number; // default 20
   sampleRate?: 16000 | 48000; // target PCM sample rate for STT; default 16000
-  vad?: { enabled: boolean; thresholdDb: number; minVoiceMs: number } | null;
-  showWaveform?: boolean;
 
   // Outputs
   setUsingAudio: (usingAudio: boolean) => void;
@@ -77,6 +74,15 @@ export type LiveSTTHandle = {
   setDevice: (deviceId: string) => Promise<void>;
 };
 
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+function toErrorMessage(e: unknown, fallback: string): string {
+  return e instanceof Error ? e.message : fallback;
+}
+
 // -------- Small transport queue for PCM frames
 class PCMQueue {
   private q: ArrayBuffer[] = [];
@@ -94,19 +100,6 @@ class PCMQueue {
   }
   clear() {
     this.q = [];
-  }
-}
-
-// -------- Utilities
-async function estimateDurationMs(blob: Blob): Promise<number> {
-  try {
-    const arrayBuf = await blob.arrayBuffer();
-    // Very rough estimate using bytes at common WebM bitrate (~64kbps) if not decodable
-    // Prefer: decode AudioBuffer via OfflineAudioContext (heavier). Keep simple for now.
-    // Returning NaN is fine; parent can ignore.
-    return NaN;
-  } catch {
-    return NaN;
   }
 }
 
@@ -143,8 +136,9 @@ async function startPcmCapture(opts: {
     },
   };
   const media = await navigator.mediaDevices.getUserMedia(constraints);
-  const audioCtx = new (window.AudioContext ||
-    (window as any).webkitAudioContext)();
+  const AC: typeof AudioContext =
+    window.AudioContext ?? window.webkitAudioContext!;
+  const audioCtx = new AC();
   const src = audioCtx.createMediaStreamSource(media);
 
   // Load worklet
@@ -170,10 +164,11 @@ async function startPcmCapture(opts: {
     opts.onLevel(peakDb);
   }, 100);
 
-  const node = new (window as any).AudioWorkletNode(
-    audioCtx,
-    "pcm-downsampler",
-  );
+  await audioCtx.audioWorklet.addModule("/pcm-worklet.js");
+  const node = new AudioWorkletNode(audioCtx, "pcm-worklet", {
+    processorOptions: { targetSampleRate: 16000 },
+  });
+
   node.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
     opts.onPcm(e.data);
   };
@@ -232,7 +227,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     prebufferMs = 4000,
     frameMs = 20,
     sampleRate = 16000,
-    vad = null,
     setUsingAudio,
     onReady,
     onStateChange,
@@ -244,7 +238,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   },
   ref,
 ) {
-  const [state, setState] = useState<LiveSttState>("idle");
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [peakDb, setPeakDb] = useState<number | undefined>(undefined);
 
@@ -256,6 +249,7 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   const stopMediaRef = useRef<(() => Promise<Blob>) | null>(null);
   const tickTimerRef = useRef<number | null>(null);
   const stateRef = useRef<LiveSttState>("idle");
+  const mediaMimeRef = useRef<string | null>(null);
 
   // Imperative API
   useImperativeHandle(ref, () => ({
@@ -270,7 +264,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   function setSt(s: LiveSttState) {
     console.log("LiveSTT state from ", stateRef.current, "to", s);
     stateRef.current = s;
-    setState(s);
     onStateChange?.(s);
   }
 
@@ -296,11 +289,11 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
       stopPcmRef.current = stop;
       mediaStreamRef.current = mediaStream;
       onPermission?.(true);
-    } catch (e: any) {
+    } catch (e: unknown) {
       onPermission?.(false);
       const err: LiveSttError = {
         code: "mic-permission-denied",
-        message: e?.message || "Microphone permission denied",
+        message: toErrorMessage(e, "Microphone permission denied"),
         details: e,
       };
       console.log("LiveSTT error", err);
@@ -313,27 +306,29 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     try {
       const { stop, mime } = await startMediaRecorder(mediaStreamRef.current!);
       stopMediaRef.current = stop;
-      (stopMediaRef.current as any)._mime = mime;
-    } catch (e: any) {
+      mediaMimeRef.current = mime;
+    } catch (e: unknown) {
       console.error("Failed to start MediaRecorder", e);
       onError?.({
         code: "unsupported-mime",
-        message: e?.message || "Failed to start MediaRecorder",
+        message: toErrorMessage(e, "Failed to start MediaRecorder"),
         details: e,
       });
     }
 
     // Timer
     const t0 = Date.now();
-    if (tickTimerRef.current) window.clearInterval(tickTimerRef.current);
+    if (tickTimerRef.current != null) {
+      window.clearInterval(tickTimerRef.current);
+    }
     tickTimerRef.current = window.setInterval(
       () => setElapsedMs(Date.now() - t0),
       200,
-    ) as any;
+    );
     setSt("recording");
 
     // Open WebSocket
-    openWebSocket(/*isReconnect*/ false);
+    openWebSocket(false);
   }
 
   function openWebSocket(isReconnect: boolean) {
@@ -399,10 +394,10 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
         }
       };
       wsRef.current = ws;
-    } catch (e: any) {
+    } catch (e: unknown) {
       onError?.({
         code: "ws-open-failed",
-        message: e?.message || "WebSocket open failed",
+        message: toErrorMessage(e, "Failed to open WebSocket"),
         details: e,
       });
       setSt("recording"); // still recording locally
@@ -440,7 +435,7 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     try {
       if (stopMediaRef.current) {
         blob = await stopMediaRef.current();
-        mime = (stopMediaRef.current as any)._mime || mime;
+        mime = mediaMimeRef.current || mime;
       }
     } catch {}
 
@@ -448,10 +443,9 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     setSt("stopped");
 
     if (blob) {
-      const durationMs = await estimateDurationMs(blob);
       onRecordingReady({
         blob,
-        meta: { durationMs, mime, size: blob.size, peakDb },
+        meta: { mime, size: blob.size, peakDb },
       });
     }
   }
@@ -486,12 +480,11 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
 
   return (
     <div className="flex items-center justify-between gap-4">
-      {/* <div className="text-sm text-muted-foreground">
-          State: <span className="font-medium text-foreground">{state}</span>
-        </div> */}
-
-      {stateRef.current === "streaming" && (
-        <div className="text-sm tabular-nums">{formatTime(elapsedMs)}</div>
+      {(stateRef.current === "streaming" ||
+        stateRef.current === "recording") && (
+        <div className="text-md font-semibold tabular-nums">
+          {formatTime(elapsedMs)}
+        </div>
       )}
 
       <div className="flex items-center justify-center gap-3">
@@ -509,11 +502,16 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
             stateRef.current === "reconnecting") && (
             <Button
               className="rounded-2xl px-4 py-2 bg-destructive text-destructive-foreground shadow hover:opacity-90"
-              onClick={() => stop()}
+              onClick={stop}
             >
-              Stop
+              <Square className="h-4 w-4 text-white" fill="white" />
             </Button>
           )
+        )}
+        {stateRef.current === "requesting" && (
+          <Button disabled className="rounded-2xl px-4 py-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </Button>
         )}
         {stateRef.current === "stopped" && (
           <Button onClick={handleCancel}>

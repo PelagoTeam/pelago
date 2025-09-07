@@ -53,10 +53,8 @@ type LiveSTTHandle = {
 type Audio = {
   blob: Blob;
   meta: {
-    durationMs: number;
     mime: string;
     size: number;
-    peakDb?: number;
   };
 };
 
@@ -111,12 +109,20 @@ export default function Conversation({
     setLoading(true);
 
     // optimistic: add pending user message (audio)
+    const supabase = createClient();
+    // 1) upload and get signed/public URL
+    const { audio_url } = await uploadRecordingAndGetUrl({
+      supabase,
+      blob: recordBlob.blob,
+      userId: profile.user_id,
+      conversationId: conversation_id,
+    });
     const optimisticUser: Message = {
       message_id: "PLACEHOLDER_ID",
       role: "user",
       pending: true,
       content: transcript,
-      audio_url: "...",
+      audio_url: audio_url,
       remarks: "...",
     };
     const optimisticConversation: Conversation = {
@@ -130,15 +136,6 @@ export default function Conversation({
     setRecordBlob(null);
 
     try {
-      const supabase = createClient();
-      // 1) upload and get signed/public URL
-      const { audio_url } = await uploadRecordingAndGetUrl({
-        supabase,
-        blob: recordBlob.blob,
-        userId: profile.user_id,
-        conversationId: conversation_id,
-      });
-
       // 2) call LLM with transcript + audioUrl
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -164,7 +161,6 @@ export default function Conversation({
       optimisticUser.remarks = data.remarks;
       optimisticUser.pending = false;
       optimisticUser.message_id = data.messageIds.user;
-      optimisticUser.audio_url = audio_url;
 
       const newConversation: Conversation = {
         ...optimisticConversation,
@@ -375,8 +371,10 @@ export default function Conversation({
         <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
           <div className="p-3">
             <div className="flex items-center gap-3 justify-end">
-              {recordBlob && (
-                <AudioPlayer src={URL.createObjectURL(recordBlob.blob)} />
+              {recordBlob && url && (
+                <div className="inline-block py-2 px-4 rounded-2xl bg-primary min-w-1/2">
+                  <AudioPlayer src={url} height={30} />
+                </div>
               )}
               {!usingAudio && (
                 <Textarea
@@ -397,24 +395,27 @@ export default function Conversation({
                 onRecordingReady={(b) => setRecordBlob(b)}
                 onError={(e) => console.error(e)}
               />
-              <Button onClick={send} disabled={loading} size="icon">
-                <SendIcon className="h-4 w-4" />
-              </Button>
+              {(!usingAudio || (usingAudio && recordBlob)) && (
+                <Button onClick={send} disabled={loading} size="icon">
+                  <SendIcon className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
-      {showHistory && (
-        <div className="absolute top-12 right-3 w-[28rem] z-20 bg-background border rounded-xl shadow-lg overflow-hidden">
-          <div className="h-[80vh] overflow-y-auto p-3">
-            <ConversationHistory
-              conversation={conversation}
-              error={error}
-              loading={loading}
-            />
-          </div>
+
+      <div
+        className={`${showHistory ? "block" : "hidden"} absolute top-12 right-3 w-[28rem] z-20 bg-background border rounded-xl shadow-lg overflow-hidden`}
+      >
+        <div className="h-[80vh] overflow-y-auto p-3">
+          <ConversationHistory
+            conversation={conversation}
+            error={error}
+            loading={loading}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 }

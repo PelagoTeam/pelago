@@ -6,7 +6,8 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import WaveAudioPlayer from "./LiveSpeechToText/AudioPlayer";
 
 type Message = UserMessage | AssistantMessage;
 
@@ -113,7 +114,30 @@ function AssistantMessageBubble({ message }: { message: AssistantMessage }) {
   );
 }
 
-function UserMessageBubble({ message }: { message: UserMessage }) {
+export function UserMessageBubble({ message }: { message: UserMessage }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!message.audio_url) return setUrl(null);
+      if (/^https?:\/\//i.test(message.audio_url)) {
+        setUrl(message.audio_url);
+        return;
+      }
+      const res = await fetch(
+        `/api/audio/sign?path=${encodeURIComponent(message.audio_url)}`,
+      );
+      const json = await res.json();
+      if (cancelled) return;
+      setUrl(json?.url ?? null);
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [message.audio_url]);
+
   return (
     <div className="flex gap-3 justify-end items-center">
       <HoverCard>
@@ -122,11 +146,19 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
             className={`w-5 ${message.pending ? "animate-pulse" : ""}`}
           />
         </HoverCardTrigger>
-        <HoverCardContent>{message.remarks}</HoverCardContent>
+        <HoverCardContent className="max-w-xs whitespace-pre-wrap">
+          {message.remarks || "No remarks"}
+        </HoverCardContent>
       </HoverCard>
-      {/* TODO: display audio */}
+
       {message.audio_url ? (
-        <p>audio</p>
+        url ? (
+          <div className="inline-block py-2 px-4 rounded-2xl bg-primary w-1/2">
+            <WaveAudioPlayer src={url} height={30} />
+          </div>
+        ) : (
+          <div className="h-9 w-[320px] animate-pulse rounded bg-muted" />
+        )
       ) : (
         <div className="inline-block py-2 px-4 text-right rounded-2xl bg-primary text-primary-foreground">
           {message.content}

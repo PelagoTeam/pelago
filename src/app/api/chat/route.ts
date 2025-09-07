@@ -6,8 +6,6 @@ import { createServer } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-const normalize = (s = "") => s.replace(/\s+/g, " ").trim();
-
 export async function POST(req: NextRequest) {
   const { theme, username, history, conversation_id, audio_url } =
     await req.json();

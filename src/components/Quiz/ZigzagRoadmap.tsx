@@ -39,7 +39,7 @@ export default function ZigZagRoadmap({
 }) {
   const router = useRouter();
 
-  // ===== Sheet state =====
+  // ===== Sheet / selection state =====
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Module | null>(null);
   const [selectedState, setSelectedState] = useState<State>("locked");
@@ -117,7 +117,7 @@ export default function ZigZagRoadmap({
     router.push(`/home/quiz?module=${selected.module_id}`);
   };
 
-  // Optional: Arrow key navigation while sheet is open (bounded)
+  // Arrow key navigation while sheet is open (bounded)
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -204,29 +204,32 @@ export default function ZigZagRoadmap({
         {/* Nodes */}
         {nodes.map(({ m, x, y }) => {
           const st = stateForModule(m);
+          const isActive = selected?.module_id === m.module_id; // <-- highlight when selected
 
           return (
             <button
               key={m.module_id}
               onClick={() => onSelectNode(m)}
               className={`
-                absolute grid place-items-center rounded-full border-2 transition shadow-sm
-                focus:outline-none focus-visible:ring-4 w-[72px] h-[72px]
+                absolute grid place-items-center rounded-full border-2 transition 
+                shadow-sm focus:outline-none w-[72px] h-[72px]
                 ${
                   st === "done" &&
-                  "bg-primary text-primary-foreground border-primary/40 focus-visible:ring-primary/25"
+                  "bg-primary text-primary-foreground border-primary/40"
                 }
                 ${
                   st === "current" &&
-                  "bg-accent text-accent-foreground border-accent/40 focus-visible:ring-accent/30 cursor-pointer"
+                  "bg-accent text-accent-foreground border-accent/40 cursor-pointer"
                 }
                 ${st === "locked" && "bg-muted text-muted-foreground border-border"}
+                ${isActive ? "border-primary ring-4 ring-primary/40 ring-offset-2 ring-offset-background" : ""}
               `}
               style={{
                 left: `calc(50% + ${x}px)`,
                 top: y,
                 transform: `translate(-50%, 0)`,
               }}
+              aria-selected={isActive}
               aria-label={
                 m.title ?? `Stage ${m.stage_number} • Module ${m.module_number}`
               }
@@ -254,7 +257,17 @@ export default function ZigZagRoadmap({
       </div>
 
       {/* Lesson Details Sheet */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) {
+            // Clear selection when sheet closes so highlight goes away
+            setSelected(null);
+            setSelectedIndex(null);
+          }
+        }}
+      >
         <SheetContent side="right" className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>
@@ -263,7 +276,6 @@ export default function ZigZagRoadmap({
                   `Stage ${selected.stage_number} • Module ${selected.module_number}`) ??
                 "Lesson"}
             </SheetTitle>
-            {/* Optional tiny subtext (difficulty/time) under title */}
             {(selected?.difficulty || selected?.est_minutes) && (
               <SheetDescription>
                 {selected?.difficulty && (

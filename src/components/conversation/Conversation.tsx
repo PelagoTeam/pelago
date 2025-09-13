@@ -15,12 +15,14 @@ import LiveSTT from "./LiveSpeechToText/STT";
 import { buildWsUrlFromProfile } from "@/lib/languages";
 import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
+import Avatar from "@/components/conversation/Avatar";
 
 type Conversation = {
   topic: string;
   difficulty: string;
   language: string;
   messages: Message[];
+  location: string;
 };
 
 type Message = UserMessage | AssistantMessage;
@@ -350,6 +352,19 @@ export default function Conversation({
     };
   }, [url]);
 
+  function isAssistantMessage(m: Message): m is AssistantMessage {
+    return m.role === "assistant";
+  }
+
+  function lastAssistantEmotion(messages: Message[]): string {
+    // Walk backwards so we don’t care if the last msg is from the user
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (isAssistantMessage(m)) return m.emotion ?? "neutral";
+    }
+    return "neutral";
+  }
+
   if (!conversation) {
     return (
       <Card className="flex flex-col w-full h-full">
@@ -401,8 +416,11 @@ export default function Conversation({
 
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-auto p-4">
-          <div className="h-full rounded-lg border border-dashed p-4 text-muted-foreground">
-            Chat area (placeholder)
+          <div className="h-full sticky top-4">
+            <Avatar
+              emotion={lastAssistantEmotion(conversation?.messages ?? [])}
+              theme={conversation.location}
+            />
           </div>
         </div>
         <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
@@ -471,20 +489,29 @@ async function getConversation(
     .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  const { data: conversation, error: e } = await supabase
+  const { data: conversation, error: e } = (await supabase
     .from("conversations")
-    .select("title, difficulty, language")
+    .select("title, difficulty, language, themes(location)")
     .eq("user_id", profile.user_id)
     .eq("language", profile.language)
     .eq("conversation_id", conversation_id)
     .order("created_at", { ascending: true })
-    .single();
+    .single()) as {
+    data: {
+      title: string;
+      difficulty: string;
+      language: string;
+      themes: { location: string };
+    };
+    error: Error | null;
+  };
 
   if (e) throw e;
   return {
     topic: conversation.title,
     difficulty: conversation.difficulty,
     language: conversation.language,
+    location: conversation.themes.location,
     messages: messages.map((message) => ({
       message_id: message.message_id,
       role: message.role,

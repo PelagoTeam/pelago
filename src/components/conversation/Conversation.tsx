@@ -40,6 +40,7 @@ type AssistantMessage = {
   pending: boolean;
   content: string;
   emotion: string;
+  speech_url?: string;
 };
 
 type LiveSTTHandle = {
@@ -157,6 +158,23 @@ export default function Conversation({
         setError("An error has occurred. Please refresh and try again.");
       }
 
+      const speech_res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: data.native,
+          userId: profile.user_id,
+          conversationId: conversation_id,
+          messageId: data.messageIds.assistant,
+        }),
+      });
+      if (!speech_res.ok) {
+        throw new Error(`TTS failed with status ${speech_res.status}`);
+      }
+      const speech_data = await speech_res.json();
+
       // finalize optimistic user message
       optimisticUser.remarks = data.remarks;
       optimisticUser.pending = false;
@@ -173,6 +191,7 @@ export default function Conversation({
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
             emotion: data.emotion,
+            speech_url: speech_data.speech_url,
           },
         ],
       };
@@ -249,6 +268,23 @@ export default function Conversation({
         setError("An error has occurred. Please refresh and try again.");
       }
 
+      const speech_res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: data.native,
+          userId: profile?.user_id,
+          conversationId: conversation_id,
+          messageId: data.messageIds.assistant,
+        }),
+      });
+      if (!speech_res.ok) {
+        throw new Error(`TTS failed with status ${speech_res.status}`);
+      }
+      const speech_data = await speech_res.json();
+
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
       optimisticUserMsg.message_id = data.messageIds.user;
@@ -264,6 +300,7 @@ export default function Conversation({
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
             emotion: data.emotion,
+            speech_url: speech_data.speech_url,
           },
         ],
       };
@@ -427,7 +464,9 @@ async function getConversation(
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("message_id, role, content, remarks, audio_url, emotion")
+    .select(
+      "message_id, role, content, remarks, audio_url, emotion, speech_url",
+    )
     .eq("conversation_id", conversation_id)
     .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
@@ -453,6 +492,7 @@ async function getConversation(
       remarks: message.remarks,
       audio_url: message.audio_url,
       emotion: message.emotion,
+      speech_url: message.speech_url,
       pending: false,
     })),
   };

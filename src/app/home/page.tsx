@@ -124,11 +124,10 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-full px-4 sm:px-6 lg:px-8">
-      <div className="relative rounded-xl border bg-card text-card-foreground p-4 sm:p-5 mb-4">
+      <div className="relative rounded-xl border bg-amber-50/80 border-amber-200/70 text-stone-800 backdrop-blur-md dark:bg-amber-100/15 dark:border-amber-200/20 dark:text-amber-50 p-4 sm:p-5 mb-4">
         <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
         <div className="pointer-events-none absolute -left-12 -bottom-12 h-28 w-28 rounded-full bg-accent/10 blur-2xl" />
-
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ">
           <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             <Flag className="h-6 w-6" />
           </div>

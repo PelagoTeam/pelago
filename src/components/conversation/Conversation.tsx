@@ -15,12 +15,14 @@ import LiveSTT from "./LiveSpeechToText/STT";
 import { buildWsUrlFromProfile } from "@/lib/languages";
 import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
+import Avatar from "@/components/conversation/Avatar";
 
 type Conversation = {
   topic: string;
   difficulty: string;
   language: string;
   messages: Message[];
+  location: string;
 };
 
 type Message = UserMessage | AssistantMessage;
@@ -40,6 +42,7 @@ type AssistantMessage = {
   pending: boolean;
   content: string;
   emotion: string;
+  speech_url?: string;
 };
 
 type LiveSTTHandle = {
@@ -157,6 +160,23 @@ export default function Conversation({
         setError("An error has occurred. Please refresh and try again.");
       }
 
+      const speech_res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: data.native,
+          userId: profile.user_id,
+          conversationId: conversation_id,
+          messageId: data.messageIds.assistant,
+        }),
+      });
+      if (!speech_res.ok) {
+        throw new Error(`TTS failed with status ${speech_res.status}`);
+      }
+      const speech_data = await speech_res.json();
+
       // finalize optimistic user message
       optimisticUser.remarks = data.remarks;
       optimisticUser.pending = false;
@@ -173,6 +193,7 @@ export default function Conversation({
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
             emotion: data.emotion,
+            speech_url: speech_data.speech_url,
           },
         ],
       };
@@ -249,6 +270,23 @@ export default function Conversation({
         setError("An error has occurred. Please refresh and try again.");
       }
 
+      const speech_res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: data.native,
+          userId: profile?.user_id,
+          conversationId: conversation_id,
+          messageId: data.messageIds.assistant,
+        }),
+      });
+      if (!speech_res.ok) {
+        throw new Error(`TTS failed with status ${speech_res.status}`);
+      }
+      const speech_data = await speech_res.json();
+
       optimisticUserMsg.remarks = data.remarks;
       optimisticUserMsg.pending = false;
       optimisticUserMsg.message_id = data.messageIds.user;
@@ -264,6 +302,7 @@ export default function Conversation({
             content:
               data.native + "\n" + data.romanization + "\n" + data.english,
             emotion: data.emotion,
+            speech_url: speech_data.speech_url,
           },
         ],
       };
@@ -312,6 +351,19 @@ export default function Conversation({
       if (url) URL.revokeObjectURL(url);
     };
   }, [url]);
+
+  function isAssistantMessage(m: Message): m is AssistantMessage {
+    return m.role === "assistant";
+  }
+
+  function lastAssistantEmotion(messages: Message[]): string {
+    // Walk backwards so we don’t care if the last msg is from the user
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (isAssistantMessage(m)) return m.emotion ?? "neutral";
+    }
+    return "neutral";
+  }
 
   if (!conversation) {
     return (
@@ -364,8 +416,11 @@ export default function Conversation({
 
       <div className="h-full flex flex-col">
         <div className="flex-1 overflow-auto p-4">
-          <div className="h-full rounded-lg border border-dashed p-4 text-muted-foreground">
-            Chat area (placeholder)
+          <div className="h-full sticky top-4">
+            <Avatar
+              emotion={lastAssistantEmotion(conversation?.messages ?? [])}
+              theme={conversation.location}
+            />
           </div>
         </div>
         <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
@@ -427,25 +482,36 @@ async function getConversation(
   const supabase = createClient();
   const { data: messages, error } = await supabase
     .from("messages")
-    .select("message_id, role, content, remarks, audio_url, emotion")
+    .select(
+      "message_id, role, content, remarks, audio_url, emotion, speech_url",
+    )
     .eq("conversation_id", conversation_id)
     .eq("user_id", profile.user_id)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  const { data: conversation, error: e } = await supabase
+  const { data: conversation, error: e } = (await supabase
     .from("conversations")
-    .select("title, difficulty, language")
+    .select("title, difficulty, language, themes(location)")
     .eq("user_id", profile.user_id)
     .eq("language", profile.language)
     .eq("conversation_id", conversation_id)
     .order("created_at", { ascending: true })
-    .single();
+    .single()) as {
+    data: {
+      title: string;
+      difficulty: string;
+      language: string;
+      themes: { location: string };
+    };
+    error: Error | null;
+  };
 
   if (e) throw e;
   return {
     topic: conversation.title,
     difficulty: conversation.difficulty,
     language: conversation.language,
+    location: conversation.themes.location,
     messages: messages.map((message) => ({
       message_id: message.message_id,
       role: message.role,
@@ -453,6 +519,7 @@ async function getConversation(
       remarks: message.remarks,
       audio_url: message.audio_url,
       emotion: message.emotion,
+      speech_url: message.speech_url,
       pending: false,
     })),
   };

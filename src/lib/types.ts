@@ -40,6 +40,10 @@ export type Module = {
   module_number: number;
   course_id: string;
   stage_number: number;
+  description: string;
+  est_minutes: number;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  title: string;
 };
 
 export type Stages = {

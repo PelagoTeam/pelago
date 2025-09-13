@@ -35,7 +35,7 @@ export default function StagePage() {
               .order("stage_number", { ascending: true }),
             supabase
               .from("user_courses")
-              .select("stage")
+              .select("stage_number")
               .eq("user_id", profile.user_id)
               .eq("course_id", profile.current_course)
               .single(),
@@ -45,7 +45,7 @@ export default function StagePage() {
         if (ucErr) throw ucErr;
 
         setStages(sData ?? []);
-        setCurrentStage(uc?.stage ?? 0);
+        setCurrentStage(uc?.stage_number ?? 0);
       } catch (e) {
         console.error("[Stages] load error:", e);
         setStages([]);

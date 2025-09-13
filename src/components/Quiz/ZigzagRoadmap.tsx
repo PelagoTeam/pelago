@@ -15,17 +15,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Check, Lock, Sailboat } from "lucide-react";
-
-export type Module = {
-  module_id: string;
-  title?: string;
-  stage_number: number;
-  module_number: number;
-  description?: string;
-  est_minutes?: number;
-  difficulty?: "beginner" | "intermediate" | "advanced";
-};
+import { BookOpen, Check, Lock, Play, Sailboat } from "lucide-react";
+import { Separator } from "../ui/separator";
+import { Module } from "@/lib/types";
 
 type State = "done" | "current" | "locked";
 
@@ -310,46 +302,88 @@ export default function ZigZagRoadmap({
         onOpenChange={(o) => {
           setOpen(o);
           if (!o) {
-            // Clear selection when sheet closes so highlight goes away
             setSelected(null);
             setSelectedIndex(null);
           }
         }}
       >
-        <SheetContent side="right" className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>
-              {selected?.title ??
-                (selected &&
-                  `Stage ${selected.stage_number + 1} • Module ${selected.module_number + 1}`) ??
-                "Lesson"}
-            </SheetTitle>
-            <SheetDescription>
-              {selected?.title}
-              {selected?.difficulty && (
-                <span className="capitalize">
-                  Difficulty: {selected.difficulty}
-                </span>
-              )}
-              {selected?.difficulty && selected?.est_minutes ? " • " : ""}
-              {selected?.est_minutes ? `${selected.est_minutes} mins` : ""}
-              {selected?.description}
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent
+          side="right"
+          aria-describedby="lesson-description"
+          className="
+      sm:max-w-md p-0 overflow-hidden
+      bg-background text-foreground
+      border-l border-border
+      shadow-2xl
+    "
+        >
+          {/* Header */}
+          <div className="px-6 py-5 text-primary-foreground bg-gradient-to-br from-primary to-primary/80 shadow-md">
+            <SheetHeader className="space-y-3">
+              <SheetTitle className="text-xl font-semibold tracking-tight flex items-center gap-2">
+                <BookOpen className="h-5 w-5" aria-hidden="true" />
+                {selected?.title ??
+                  (selected &&
+                    `Stage ${selected.stage_number + 1} • Module ${selected.module_number + 1}`) ??
+                  "Lesson"}
+              </SheetTitle>
 
-          {/* Centered description area */}
-          <div className="mt-6 flex flex-1 items-start justify-center">
-            <div className="prose prose-sm dark:prose-invert text-center">
-              {selected?.description ?? (
-                <p className="text-muted-foreground">
-                  No description provided for this lesson.
-                </p>
-              )}
-            </div>
+              {/* A11y helper */}
+              <SheetDescription className="sr-only">
+                Lesson details and metadata
+              </SheetDescription>
+            </SheetHeader>
           </div>
 
-          {/* Footer: bounded navigation with Start in the middle */}
-          <SheetFooter className="mt-8">
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <div
+              id="lesson-description"
+              className="rounded-[var(--radius-xl)] border border-border bg-card text-card-foreground p-4 shadow-sm"
+            >
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                Overview
+              </h3>
+              <Separator className="mb-3" />
+              <div className="prose prose-sm dark:prose-invert text-left max-h-[46vh] overflow-y-auto pr-1 no-scrollbar">
+                {selected?.description ? (
+                  <p>{selected.description}</p>
+                ) : (
+                  <p className="text-muted-foreground">
+                    No description provided for this lesson.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {(selected?.difficulty || selected?.est_minutes) && (
+              <div className="grid grid-cols-2 gap-3">
+                {selected?.difficulty && (
+                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/30 p-3 shadow-xs">
+                    <div className="text-xs text-muted-foreground">
+                      Difficulty
+                    </div>
+                    <div className="mt-1 font-medium capitalize">
+                      {selected.difficulty}
+                    </div>
+                  </div>
+                )}
+                {typeof selected?.est_minutes === "number" && (
+                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/30 p-3 shadow-xs">
+                    <div className="text-xs text-muted-foreground">
+                      Estimated time
+                    </div>
+                    <div className="mt-1 font-medium">
+                      {selected.est_minutes} mins
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+          <SheetFooter className="px-6 py-4 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
             <div className="grid w-full grid-cols-3 items-center gap-2">
               <Button
                 variant="outline"
@@ -360,6 +394,7 @@ export default function ZigZagRoadmap({
                   gotoIndex(selectedIndex - 1)
                 }
                 type="button"
+                className="shadow-2xs"
               >
                 ← Prev
               </Button>
@@ -368,8 +403,17 @@ export default function ZigZagRoadmap({
                 onClick={beginLesson}
                 disabled={selectedState === "locked"}
                 type="button"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-[var(--radius-lg)] shadow motion-safe:animate-in motion-safe:fade-in-10 motion-safe:zoom-in-95"
               >
-                {selectedState === "locked" ? "Locked" : "Start Lesson"}
+                {selectedState === "locked" ? (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" /> Locked
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" /> Start Lesson
+                  </>
+                )}
               </Button>
 
               <Button
@@ -383,6 +427,7 @@ export default function ZigZagRoadmap({
                   gotoIndex(selectedIndex + 1)
                 }
                 type="button"
+                className="shadow-2xs"
               >
                 Next →
               </Button>

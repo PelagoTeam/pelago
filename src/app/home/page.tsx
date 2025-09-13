@@ -77,7 +77,9 @@ export default function HomePage() {
 
       const { data: qs, error: qErr } = await supabase
         .from("modules")
-        .select("module_id, module_number, course_id")
+        .select(
+          "module_id, module_number, course_id, title, difficulty, description, est_minutes",
+        )
         .eq("course_id", courseId)
         .eq("stage_id", stage_id);
       if (qErr) {
@@ -94,6 +96,10 @@ export default function HomePage() {
             stage_number:
               stages.find((s) => s.stage_id === stage_id)?.stage_number ?? 0,
             course_id: q.course_id,
+            title: q.title,
+            description: q.description,
+            est_minutes: q.est_minutes,
+            difficulty: q.difficulty,
           };
         }) ?? [];
       setModules(modules);

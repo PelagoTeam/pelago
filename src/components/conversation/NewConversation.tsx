@@ -43,6 +43,22 @@ export default function NewConversation({
       }
 
       const data = await res.json();
+      console.log("Created conversation", data);
+      const ttsRes = await fetch(`/api/tts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: data.starting_text,
+          userId: profile.user_id,
+          conversationId: data.conversation_id,
+          messageId: data.message_id,
+        }),
+      });
+      if (!ttsRes.ok) {
+        throw new Error("Failed to generate TTS audio");
+      }
 
       onCreated(data.conversation_id);
     } catch (err) {

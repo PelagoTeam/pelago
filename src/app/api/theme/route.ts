@@ -134,12 +134,16 @@ export async function POST(req: NextRequest) {
 
   const starting_text = `${native}\n${romanization}\n${english}`;
 
-  const { error: msgErr } = await supabase.from("messages").insert({
-    conversation_id: conv.conversation_id,
-    role: "assistant",
-    content: starting_text,
-    user_id: user.id,
-  });
+  const { data: msg, error: msgErr } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conv.conversation_id,
+      role: "assistant",
+      content: starting_text,
+      user_id: user.id,
+    })
+    .select("message_id")
+    .single();
 
   if (msgErr) {
     return NextResponse.json({ error: msgErr.message }, { status: 500 });
@@ -147,6 +151,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       conversation_id: conv.conversation_id,
+      message_id: msg.message_id,
+      starting_text,
     },
     { status: 200 },
   );

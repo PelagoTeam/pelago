@@ -5,17 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { SendIcon } from "lucide-react";
+import {
+  ChevronUpIcon,
+  InfoIcon,
+  PauseIcon,
+  PlayIcon,
+  SendIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
-import ConversationHistory from "./ConversationHistory";
 import LiveSTT from "./LiveSpeechToText/STT";
 import { buildWsUrlFromProfile } from "@/lib/languages";
 import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
-import Avatar from "@/components/conversation/Avatar";
+import { cn } from "@/lib/utils";
+import WaveAudioPlayer from "./LiveSpeechToText/AudioPlayer";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 type Conversation = {
   topic: string;
@@ -66,6 +77,7 @@ export default function Conversation({
 }: {
   conversation_id: string;
 }) {
+  const { profile, loading: authLoading } = useAuth();
   const [conversation, setConversation] = useState<Conversation | undefined>();
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
@@ -81,7 +93,11 @@ export default function Conversation({
   } | null>(null);
   const sttRef = useRef<LiveSTTHandle>(null);
 
-  const { profile, loading: authLoading } = useAuth();
+  const wsUrl = buildWsUrlFromProfile(profile);
+  const url = useMemo(
+    () => (recordBlob ? URL.createObjectURL(recordBlob.blob) : null),
+    [recordBlob],
+  );
 
   useEffect(() => {
     if (!profile || !conversation_id || authLoading) return;
@@ -99,6 +115,20 @@ export default function Conversation({
       clearTimeout(handle);
     };
   }, [conversation_id, profile, authLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  const messagesRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      messagesRef.current?.scrollTo({ top: 0 });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [conversation?.messages.length, loading]);
 
   async function sendFromAudio() {
     if (!recordBlob || !profile || !conversation || !recordedAudioTranscribe)
@@ -336,35 +366,6 @@ export default function Conversation({
     await sendFromText();
   }
 
-  const handleShowHistory = () => {
-    setShowHistory(!showHistory);
-  };
-
-  const wsUrl = buildWsUrlFromProfile(profile);
-  const url = useMemo(
-    () => (recordBlob ? URL.createObjectURL(recordBlob.blob) : null),
-    [recordBlob],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [url]);
-
-  function isAssistantMessage(m: Message): m is AssistantMessage {
-    return m.role === "assistant";
-  }
-
-  function lastAssistantEmotion(messages: Message[]): string {
-    // Walk backwards so we don’t care if the last msg is from the user
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const m = messages[i];
-      if (isAssistantMessage(m)) return m.emotion ?? "neutral";
-    }
-    return "neutral";
-  }
-
   if (!conversation) {
     return (
       <Card className="flex flex-col w-full h-full">
@@ -406,73 +407,326 @@ export default function Conversation({
     }
   };
 
+  const avatar = avatarState(conversation);
+
   return (
-    <div className="relative h-full w-full rounded-xl border bg-background shadow-sm">
-      <div className="absolute right-3 top-3 z-10">
-        <Button variant="outline" onClick={handleShowHistory}>
-          View History
-        </Button>
-      </div>
-
-      <div className="h-full flex flex-col">
-        <div className="flex-1 overflow-auto p-4">
-          <div className="h-full sticky top-4">
-            <Avatar
-              emotion={lastAssistantEmotion(conversation?.messages ?? [])}
-              theme={conversation.location}
-            />
-          </div>
-        </div>
-        <div className="sticky bottom-0 w-full bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/50 border-t">
-          <div className="p-3">
-            <div className="flex items-center gap-3 justify-end">
-              {recordBlob && url && (
-                <div className="inline-block py-2 px-4 rounded-2xl bg-primary min-w-1/2">
-                  <AudioPlayer src={url} height={30} />
-                </div>
-              )}
-              {!usingAudio && (
-                <Textarea
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                  }}
-                  onKeyDown={onKeyDown}
-                  placeholder="Type your message…"
-                  className="max-w-full h-9 min-h-9 resize-none"
-                />
-              )}
-              <LiveSTT
-                setUsingAudio={setUsingAudio}
-                ref={sttRef}
-                wsUrl={wsUrl}
-                setRecordedAudioTranscribe={setRecordedAudioTranscribe}
-                onRecordingReady={(b) => setRecordBlob(b)}
-                onError={(e) => console.error(e)}
-              />
-              {(!usingAudio || (usingAudio && recordBlob)) && (
-                <Button onClick={send} disabled={loading} size="icon">
-                  <SendIcon className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div
+      className="flex overflow-hidden relative flex-col justify-end w-full h-full rounded-xl border"
+      style={{ backgroundImage: `url(${avatar.theme})` }}
+    >
+      <img
+        key={avatar.emotion}
+        src={avatar.emotion}
+        alt={`${avatar.emotion} avatar`}
+        draggable={false}
+        loading="eager"
+        className="absolute inset-0 z-0 scale-150 translate-y-1/8"
+      />
       <div
-        className={`${showHistory ? "block" : "hidden"} absolute top-12 right-3 w-[28rem] z-20 bg-background border rounded-xl shadow-lg overflow-hidden`}
+        className={cn(
+          "w-full relative group transition-all z-10 flex flex-col",
+          showHistory
+            ? "h-5/6 bg-gradient-to-b from-background/70 to-background"
+            : "h-1/4 bg-transparent",
+        )}
       >
-        <div className="h-[80vh] overflow-y-auto p-3">
-          <ConversationHistory
-            conversation={conversation}
-            error={error}
-            loading={loading}
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => setShowHistory((h) => !h)}
+          className={cn(
+            "absolute top-0 left-1/2 -translate-1/2 rounded-full bg-muted/30",
+            "group-hover:opacity-100",
+            showHistory ? "opacity-100 bg-muted" : "opacity-0",
+          )}
+        >
+          <ChevronUpIcon
+            strokeWidth={3}
+            className={cn(
+              "text-muted-foreground",
+              showHistory ? "rotate-180" : "",
+            )}
           />
+        </Button>
+        <div
+          ref={messagesRef}
+          className="flex overflow-y-auto flex-col-reverse gap-3 p-6 h-full no-scrollbar"
+        >
+          {loading && <Skeleton className="w-1/3 h-12" />}
+          {[...conversation.messages].toReversed().map((message) => (
+            <MessageBubble
+              key={message.message_id}
+              message={message}
+              isLatestAssistant={
+                message.message_id ===
+                [...conversation.messages]
+                  .toReversed()
+                  .find((m) => m.role === "assistant")?.message_id
+              }
+            />
+          ))}
         </div>
+      </div>
+      <div className="flex z-10 gap-3 justify-end items-center p-3 w-full border-t bg-background">
+        {recordBlob && url && (
+          <div className="inline-block py-2 px-4 rounded-2xl bg-primary min-w-1/2">
+            <AudioPlayer src={url} height={30} />
+          </div>
+        )}
+        {!usingAudio && (
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Type your message…"
+            className="max-w-full h-9 resize-none min-h-9"
+          />
+        )}
+        <LiveSTT
+          setUsingAudio={setUsingAudio}
+          ref={sttRef}
+          wsUrl={wsUrl}
+          setRecordedAudioTranscribe={setRecordedAudioTranscribe}
+          onRecordingReady={(b) => setRecordBlob(b)}
+          onError={(e) => console.error(e)}
+        />
+        {(!usingAudio || (usingAudio && recordBlob)) && (
+          <Button onClick={send} disabled={loading} size="icon">
+            <SendIcon className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
+}
+
+function MessageBubble({
+  message,
+  isLatestAssistant,
+}: {
+  message: Message;
+  isLatestAssistant: boolean;
+}) {
+  if (message.role === "user") {
+    return <UserMessageBubble message={message} />;
+  }
+  if (message.role === "assistant") {
+    return (
+      <AssistantMessageBubble
+        message={message}
+        isLatestAssistant={isLatestAssistant}
+      />
+    );
+  }
+}
+
+function UserMessageBubble({ message }: { message: UserMessage }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      if (!message.audio_url) return setUrl(null);
+      if (/^https?:\/\//i.test(message.audio_url)) {
+        setUrl(message.audio_url);
+        return;
+      }
+      const res = await fetch(
+        `/api/audio/sign?path=${encodeURIComponent(message.audio_url)}`,
+      );
+      const json = await res.json();
+      if (cancelled) return;
+      setUrl(json?.url ?? null);
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [message.audio_url]);
+
+  return (
+    <div className="flex gap-3 items-center self-end max-w-1/2">
+      <HoverCard>
+        <HoverCardTrigger>
+          <InfoIcon
+            className={`w-5 ${message.pending ? "animate-pulse" : ""}`}
+          />
+        </HoverCardTrigger>
+        <HoverCardContent
+          align="start"
+          side="left"
+          className="max-w-xs whitespace-pre-wrap"
+        >
+          {message.remarks || "No remarks"}
+        </HoverCardContent>
+      </HoverCard>
+      {message.audio_url ? (
+        <div className="p-4 rounded-lg bg-primary">
+          {url ? (
+            <WaveAudioPlayer src={url} height={30} />
+          ) : (
+            <div className="h-9 rounded animate-pulse w-[320px] bg-muted" />
+          )}
+        </div>
+      ) : (
+        <div className="py-2 px-3 rounded-lg bg-muted">
+          <p className="font-medium">{message.content}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssistantMessageBubble({
+  message,
+  isLatestAssistant,
+}: {
+  message: AssistantMessage;
+  isLatestAssistant: boolean;
+}) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const attemptedAutoRef = useRef<Record<string, boolean>>({});
+  const [err, setErr] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const path = message.speech_url;
+      if (!path) return setSignedUrl(null);
+
+      try {
+        const res = await fetch(
+          `/api/tts/sign?path=${encodeURIComponent(path)}`,
+        );
+        const json = await res.json();
+        if (!cancelled) setSignedUrl(json?.url ?? null);
+      } catch {
+        if (!cancelled) setSignedUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [message.speech_url]);
+
+  useEffect(() => {
+    const url = signedUrl;
+    const el = audioRef.current;
+    if (!url || !el) return;
+
+    el.pause();
+    el.src = url;
+    el.load();
+    setErr(null);
+
+    if (isLatestAssistant && !attemptedAutoRef.current[message.message_id]) {
+      attemptedAutoRef.current[message.message_id] = true;
+      el.currentTime = 0;
+      el.play().catch((e) => {
+        setErr(e?.message || "Autoplay blocked");
+      });
+    }
+  }, [isLatestAssistant, message.message_id, message.speech_url, signedUrl]);
+
+  const handlePlay = async () => {
+    const el = audioRef.current;
+    if (!el || !signedUrl) return;
+    try {
+      if (el.src !== signedUrl) {
+        el.src = signedUrl;
+        el.load();
+      }
+      el.currentTime = 0;
+      await el.play();
+      setErr(null);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setErr(e.message);
+      } else if (typeof e === "string") {
+        setErr(e);
+      } else {
+        setErr("Could not play");
+      }
+    }
+  };
+
+  const handlePause = () => {
+    audioRef.current?.pause();
+  };
+
+  return (
+    <div className="flex flex-col gap-2 text-left">
+      <audio ref={audioRef} preload="auto" className="hidden" />
+
+      <div className="py-2 px-3 rounded-lg bg-background max-w-1/2">
+        <p className="font-medium">{message.content}</p>
+      </div>
+
+      {signedUrl && (
+        <div className="flex gap-2 items-center">
+          <Button
+            onClick={handlePlay}
+            variant={"secondary"}
+            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+            aria-label="Play assistant audio"
+          >
+            <PlayIcon fill="black" /> play
+          </Button>
+          <Button
+            onClick={handlePause}
+            variant={"secondary"}
+            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+            aria-label="Pause assistant audio"
+          >
+            <PauseIcon fill="black" /> pause
+          </Button>
+          {err && (
+            <span className="text-xs text-muted-foreground">
+              {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const GIFS = {
+  neutral: "/avatar/neutral.gif",
+
+  happy: "/avatar/happy.gif",
+  sad: "/avatar/happy.gif",
+  angry: "/avatar/happy.gif",
+  speaking: "/avatar/happy.gif",
+
+  confused: "/avatar/confused.gif",
+  surprised: "/avatar/confused.gif",
+
+  curious: "/avatar/curious.gif",
+  thinking: "/avatar/curious.gif",
+  interested: "/avatar/curious.gif",
+};
+
+const THEMES = {
+  mall: "/theme/mall.png",
+  market: "/theme/market.png",
+  restaurant: "/theme/restaurant.png",
+  temple: "/theme/temple.png",
+};
+
+function avatarState(conversation: Conversation) {
+  const location = conversation.location.toLowerCase().trim();
+  const emotion = conversation.messages
+    .filter((msg) => msg.role === "assistant")
+    .at(-1)
+    ?.emotion?.toLowerCase()
+    .trim();
+
+  return {
+    theme: THEMES[location as keyof typeof THEMES] ?? THEMES.mall,
+    emotion: GIFS[emotion as keyof typeof GIFS] ?? GIFS.neutral,
+  };
 }
 
 async function getConversation(

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Lock, PlayCircle } from "lucide-react";
+import Image from "next/image";
 
 export default function StagePage() {
   const { profile } = useAuth();
@@ -76,7 +77,14 @@ export default function StagePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4">
+    <div className="max-w-4xl mx-auto space-y-6 px-4 bg-primary/30 rounded-lg py-6">
+      <Image
+        src="/background/conversation-bg.jpg"
+        alt=""
+        fill
+        className="object-cover pointer-events-none select-none will-change-transform z-[-1]"
+        priority
+      />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Stages</h2>
         <Badge variant="secondary">

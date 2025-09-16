@@ -139,7 +139,7 @@ export default function ZigZagRoadmap({
       {/* FULL-PAGE BACKGROUND */}
       <div className="fixed inset-0 -z-10">
         <Image
-          src="/quiz/quiz-bg.png"
+          src="/background/quiz-bg.png"
           alt=""
           fill
           className="object-cover pointer-events-none select-none will-change-transform"

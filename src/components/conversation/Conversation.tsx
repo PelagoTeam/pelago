@@ -428,7 +428,7 @@ export default function Conversation({
         alt={`${avatar.emotion} avatar`}
         draggable={false}
         loading="eager"
-        className="absolute inset-0 z-0 w-full h-full object-cover object-center pointer-events-none select-none transition-transform duration-300 translate-y-8"
+        className="absolute bottom-0 left-1/2 z-0 scale-150 -translate-x-1/2"
       />
       <div
         className={cn(

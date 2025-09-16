@@ -570,7 +570,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
         </HoverCardContent>
       </HoverCard>
       {message.audio_url ? (
-        <div className="p-4 rounded-lg bg-primary">
+        <div className="p-4 rounded-lg shadow bg-primary">
           {url ? (
             <WaveAudioPlayer src={url} height={30} />
           ) : (
@@ -578,7 +578,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
           )}
         </div>
       ) : (
-        <div className="py-2 px-3 rounded-lg bg-muted">
+        <div className="py-2 px-3 rounded-lg shadow bg-muted">
           <p className="font-medium">{message.content}</p>
         </div>
       )}
@@ -608,7 +608,9 @@ function AssistantMessageBubble({
       if (!path) return setSignedUrl(null);
 
       try {
-        const res = await fetch(`/api/tts/sign?path=${encodeURIComponent(path)}`);
+        const res = await fetch(
+          `/api/tts/sign?path=${encodeURIComponent(path)}`,
+        );
         const json = await res.json();
         if (!cancelled) setSignedUrl(json?.url ?? null);
       } catch {
@@ -691,14 +693,14 @@ function AssistantMessageBubble({
     <div className="flex flex-col gap-2 text-left">
       <audio ref={audioRef} preload="auto" className="hidden" />
 
-      <div className="py-2 px-3 rounded-lg bg-background max-w-1/2">
+      <div className="py-2 px-3 rounded-lg shadow bg-background max-w-1/2">
         <p className="font-medium whitespace-pre-wrap">{native}</p>
 
         {(showRomanization || showEnglish) && (
-          <div className="rounded-lg border bg-card p-3 space-y-1">
+          <div className="p-3 space-y-1 rounded-lg border bg-card">
             {showRomanization && romanization && (
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="tracking-wide uppercase text-[10px] text-muted-foreground">
                   Romanization
                 </div>
                 <div className="text-sm">{romanization}</div>
@@ -706,7 +708,7 @@ function AssistantMessageBubble({
             )}
             {showEnglish && english && (
               <div className="pt-2 border-t">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="tracking-wide uppercase text-[10px] text-muted-foreground">
                   English
                 </div>
                 <div className="text-sm">{english}</div>
@@ -718,9 +720,9 @@ function AssistantMessageBubble({
 
       {/* Actions row: hints + audio controls together */}
       {(hasAnyHints || signedUrl) && (
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {hasAnyHints && (
-            !allHintsShown ? (
+        <div className="flex flex-wrap gap-2 items-center mt-2">
+          {hasAnyHints &&
+            (!allHintsShown ? (
               <Button
                 onClick={handleShowHint}
                 variant="secondary"
@@ -747,8 +749,7 @@ function AssistantMessageBubble({
               >
                 Hide hints
               </Button>
-            )
-          )}
+            ))}
 
           {signedUrl && (
             <>
@@ -759,7 +760,7 @@ function AssistantMessageBubble({
                 className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
                 aria-label="Play assistant audio"
               >
-                <PlayIcon className="mr-1 h-4 w-4" />
+                <PlayIcon className="mr-1 w-4 h-4" />
                 Play
               </Button>
               <Button
@@ -769,7 +770,7 @@ function AssistantMessageBubble({
                 className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
                 aria-label="Pause assistant audio"
               >
-                <PauseIcon className="mr-1 h-4 w-4" />
+                <PauseIcon className="mr-1 w-4 h-4" />
                 Pause
               </Button>
 
@@ -785,7 +786,6 @@ function AssistantMessageBubble({
     </div>
   );
 }
-
 
 const GIFS = {
   neutral: "/avatar/neutral.gif",
@@ -846,14 +846,14 @@ async function getConversation(
     .eq("conversation_id", conversation_id)
     .order("created_at", { ascending: true })
     .single()) as {
-      data: {
-        title: string;
-        difficulty: string;
-        language: string;
-        themes: { location: string };
-      };
-      error: Error | null;
+    data: {
+      title: string;
+      difficulty: string;
+      language: string;
+      themes: { location: string };
     };
+    error: Error | null;
+  };
 
   if (e) throw e;
   return {

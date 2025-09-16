@@ -16,7 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/AuthProfileContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
-import LiveSTT from "./LiveSpeechToText/STT";
+import LiveSTT, { LiveSttState } from "./LiveSpeechToText/STT";
 import { buildWsUrlFromProfile } from "@/lib/languages";
 import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
@@ -92,6 +92,7 @@ export default function Conversation({
     meta: { isPartial: boolean };
   } | null>(null);
   const sttRef = useRef<LiveSTTHandle>(null);
+  const stateRef = useRef<LiveSttState>("idle");
 
   const wsUrl = buildWsUrlFromProfile(profile);
   const url = useMemo(
@@ -140,6 +141,8 @@ export default function Conversation({
     const transcript = recordedAudioTranscribe.text.trim();
 
     setLoading(true);
+    setUsingAudio(false);
+    stateRef.current = "idle";
 
     // optimistic: add pending user message (audio)
     const supabase = createClient();
@@ -412,7 +415,12 @@ export default function Conversation({
   return (
     <div
       className="flex overflow-hidden relative flex-col justify-end w-full h-full rounded-xl border"
-      style={{ backgroundImage: `url(${avatar.theme})` }}
+      style={{
+        backgroundImage: `url(${avatar.theme})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
       <img
         key={avatar.emotion}
@@ -420,7 +428,7 @@ export default function Conversation({
         alt={`${avatar.emotion} avatar`}
         draggable={false}
         loading="eager"
-        className="absolute inset-0 z-0 scale-150 translate-y-1/8"
+        className="absolute inset-0 z-0 w-full h-full object-cover object-center pointer-events-none select-none transition-transform duration-300 translate-y-8"
       />
       <div
         className={cn(
@@ -485,6 +493,7 @@ export default function Conversation({
         <LiveSTT
           setUsingAudio={setUsingAudio}
           ref={sttRef}
+          stateRef={stateRef}
           wsUrl={wsUrl}
           setRecordedAudioTranscribe={setRecordedAudioTranscribe}
           onRecordingReady={(b) => setRecordBlob(b)}
@@ -589,6 +598,9 @@ function AssistantMessageBubble({
   const [err, setErr] = useState<string | null>(null);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
+  const [showRomanization, setShowRomanization] = useState(false);
+  const [showEnglish, setShowEnglish] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -609,6 +621,24 @@ function AssistantMessageBubble({
       cancelled = true;
     };
   }, [message.speech_url]);
+
+  const { native, romanization, english } = useMemo(() => {
+    const parts =
+      typeof message.content === "string"
+        ? message.content.split("\n").map((s) => s.trim())
+        : [];
+    // Fallbacks to avoid runtime surprises
+    return {
+      native: parts[0] || message.content || "",
+      romanization: parts[1] || "",
+      english: parts[2] || "",
+    };
+  }, [message.content]);
+
+  useEffect(() => {
+    setShowRomanization(false);
+    setShowEnglish(false);
+  }, [message.message_id]);
 
   useEffect(() => {
     const url = signedUrl;
@@ -655,13 +685,73 @@ function AssistantMessageBubble({
     audioRef.current?.pause();
   };
 
+  const handleShowHint = () => {
+    if (!showRomanization && romanization) setShowRomanization(true);
+    else if (!showEnglish && english) setShowEnglish(true);
+  };
+
+  const hasAnyHints = Boolean(romanization || english);
+  const allHintsShown =
+    (!romanization || showRomanization) && (!english || showEnglish);
+
   return (
     <div className="flex flex-col gap-2 text-left">
       <audio ref={audioRef} preload="auto" className="hidden" />
 
       <div className="py-2 px-3 rounded-lg bg-background max-w-1/2">
-        <p className="font-medium">{message.content}</p>
+        <p className="font-medium whitespace-pre-wrap">{native}</p>
+        {/* Hints panel (appears only when revealed) */}
+        {(showRomanization || showEnglish) && (
+          <div className="rounded-lg border bg-card p-3 space-y-1">
+            {showRomanization && romanization && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Romanization
+                </div>
+                <div className="text-sm">{romanization}</div>
+              </div>
+            )}
+            {showEnglish && english && (
+              <div className="pt-2 border-t">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  English
+                </div>
+                <div className="text-sm">{english}</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+      {hasAnyHints && (
+        <div className="flex items-center gap-2">
+          {!allHintsShown ? (
+            <Button
+              onClick={handleShowHint}
+              variant="secondary"
+              className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+              aria-label={
+                !showRomanization
+                  ? "Show romanization hint"
+                  : "Show English translation"
+              }
+            >
+              {!showRomanization ? "Show hint" : "Show translation"}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                setShowRomanization(false);
+                setShowEnglish(false);
+              }}
+              variant="secondary"
+              className="py-1 px-2 text-xs rounded"
+              aria-label="Hide hints"
+            >
+              Hide hints
+            </Button>
+          )}
+        </div>
+      )}
 
       {signedUrl && (
         <div className="flex gap-2 items-center">

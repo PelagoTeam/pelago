@@ -52,6 +52,7 @@ export type LiveSTTProps = {
   prebufferMs?: number; // default 4000
   frameMs?: number; // default 20
   sampleRate?: 16000 | 48000; // target PCM sample rate for STT; default 16000
+  stateRef: React.RefObject<LiveSttState>;
 
   // Outputs
   setUsingAudio: (usingAudio: boolean) => void;
@@ -227,6 +228,7 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
     prebufferMs = 4000,
     frameMs = 20,
     sampleRate = 16000,
+    stateRef,
     setUsingAudio,
     onReady,
     onStateChange,
@@ -248,7 +250,6 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const stopMediaRef = useRef<(() => Promise<Blob>) | null>(null);
   const tickTimerRef = useRef<number | null>(null);
-  const stateRef = useRef<LiveSttState>("idle");
   const mediaMimeRef = useRef<string | null>(null);
 
   // Imperative API

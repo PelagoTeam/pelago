@@ -366,7 +366,10 @@ export default function WaveAudioPlayer({
   };
 
   return (
-    <div className="w-full gap-3 flex" style={{ height: height + 10 }}>
+    <div
+      className="w-full gap-3 flex justify-center items-center"
+      style={{ height: height + 10 }}
+    >
       <div className="flex items-center justify-center flex-col gap-2">
         <Button
           className="flex items-center justify-center h-9 w-9 rounded-full border-2 border-white"
@@ -405,10 +408,8 @@ export default function WaveAudioPlayer({
           onLoadedMetadata={onLoadedMetadata}
           className="hidden"
         />
-        <div className="text-xs tabular-nums text-white">
-          {fmt(currentTime)}
-        </div>
       </div>
+      <div className="text-xs tabular-nums text-white">{fmt(currentTime)}</div>
 
       {error && <div className="mt-2 text-xs text-red-600">{error}</div>}
     </div>

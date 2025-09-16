@@ -10,13 +10,11 @@ import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { BookOpen, Check, Lock, Play, Sailboat } from "lucide-react";
-import { Separator } from "../ui/separator";
 import { Module } from "@/lib/types";
 
 type State = "done" | "current" | "locked";
@@ -165,17 +163,17 @@ export default function ZigZagRoadmap({
         />
 
         {/* Top→bottom gradient for navbar/readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/28 via-transparent to-white/12" />
+        <div className="absolute inset-0 bg-gradient-to-b via-transparent from-white/28 to-white/12" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-[720px] items-center justify-between rounded-xl bg-white/45 backdrop-blur-md px-4 py-2.5 shadow-sm">
+      <div className="flex justify-between items-center py-2.5 px-4 mx-auto w-full rounded-xl shadow-sm max-w-[720px] bg-white/45 backdrop-blur-md">
         <h2 className="text-lg font-semibold">Course Roadmap</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex gap-3 items-center">
           <Badge variant="secondary" className="bg-white/70 backdrop-blur-md">
             {Math.min(progress.module_number, totalModules)}/{totalModules}{" "}
             completed
           </Badge>
-          <div className="rounded-md bg-white/60 backdrop-blur-md p-1">
+          <div className="p-1 rounded-md bg-white/60 backdrop-blur-md">
             <Progress
               value={(progress.module_number / Math.max(1, totalModules)) * 100}
               className="w-36"
@@ -187,10 +185,10 @@ export default function ZigZagRoadmap({
 
       {/* Roadmap */}
       {/* CONTENT */}
-      <div className="space-y-6 px-4 py-6 sm:px-6 pt-10 sm:pt-12">
+      <div className="py-6 px-4 pt-10 space-y-6 sm:px-6 sm:pt-12">
         {/* Roadmap canvas */}
         <div
-          className="relative mx-auto w-full max-w-[520px] rounded-2xl p-6 overflow-visible"
+          className="overflow-visible relative p-6 mx-auto w-full rounded-2xl max-w-[520px]"
           style={{ height: containerHeight + 48 }}
         >
           {/* Edges */}
@@ -220,7 +218,7 @@ export default function ZigZagRoadmap({
                 aria-hidden
               >
                 {/* Base track: semi-white with inner shadow so it reads on blue water */}
-                <div className="h-full w-full rounded-full bg-white/70 shadow-[inset_0_0_4px_rgba(0,0,0,0.15)]" />
+                <div className="w-full h-full rounded-full bg-white/70 shadow-[inset_0_0_4px_rgba(0,0,0,0.15)]" />
                 {/* Completed: strong primary with soft glow */}
                 {doneEdge && (
                   <div className="absolute inset-0 rounded-full bg-primary/85 shadow-[0_0_10px_rgba(0,0,0,0.12)]" />
@@ -278,7 +276,7 @@ export default function ZigZagRoadmap({
                 type="button"
               >
                 {st === "current" && (
-                  <span className="absolute -top-10 rounded-md bg-secondary px-3 py-2 text-xs font-semibold text-secondary-foreground border-2 border-primary/40">
+                  <span className="absolute -top-10 py-2 px-3 text-xs font-semibold rounded-md border-2 bg-secondary text-secondary-foreground border-primary/40">
                     BEGIN
                   </span>
                 )}
@@ -310,42 +308,29 @@ export default function ZigZagRoadmap({
         <SheetContent
           side="right"
           aria-describedby="lesson-description"
-          className="
-      sm:max-w-md p-0 overflow-hidden
-      bg-background text-foreground
-      border-l border-border
-      shadow-2xl
-    "
+          className="overflow-hidden p-0 border-l shadow-2xl sm:max-w-md bg-background text-foreground border-border"
         >
-          {/* Header */}
-          <div className="px-6 py-5 text-primary-foreground bg-gradient-to-br from-primary to-primary/80 shadow-md">
-            <SheetHeader className="space-y-3">
-              <SheetTitle className="text-xl font-semibold tracking-tight flex items-center gap-2">
-                <BookOpen className="h-5 w-5" aria-hidden="true" />
+          <SheetHeader>
+            <SheetTitle className="flex gap-2 items-center">
+              <BookOpen className="w-5 h-5" aria-hidden="true" />
+              <span className="text-xl font-semibold tracking-tight">
                 {selected?.title ??
                   (selected &&
                     `Stage ${selected.stage_number + 1} • Module ${selected.module_number + 1}`) ??
                   "Lesson"}
-              </SheetTitle>
+              </span>
+            </SheetTitle>
+          </SheetHeader>
 
-              {/* A11y helper */}
-              <SheetDescription className="sr-only">
-                Lesson details and metadata
-              </SheetDescription>
-            </SheetHeader>
-          </div>
-
-          {/* Body */}
           <div className="p-6 space-y-4">
             <div
               id="lesson-description"
-              className="rounded-[var(--radius-xl)] border border-border bg-card text-card-foreground p-4 shadow-sm"
+              className="p-4 border shadow-sm rounded-[var(--radius-xl)] border-border bg-card text-card-foreground"
             >
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">
+              <h3 className="mb-2 text-sm font-medium text-muted-foreground">
                 Overview
               </h3>
-              <Separator className="mb-3" />
-              <div className="prose prose-sm dark:prose-invert text-left max-h-[46vh] overflow-y-auto pr-1 no-scrollbar">
+              <div className="overflow-y-auto pr-1 text-left prose prose-sm max-h-[46vh] no-scrollbar dark:prose-invert">
                 {selected?.description ? (
                   <p>{selected.description}</p>
                 ) : (
@@ -359,7 +344,7 @@ export default function ZigZagRoadmap({
             {(selected?.difficulty || selected?.est_minutes) && (
               <div className="grid grid-cols-2 gap-3">
                 {selected?.difficulty && (
-                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/30 p-3 shadow-xs">
+                  <div className="p-3 border rounded-[var(--radius-lg)] border-border bg-muted/30 shadow-xs">
                     <div className="text-xs text-muted-foreground">
                       Difficulty
                     </div>
@@ -369,7 +354,7 @@ export default function ZigZagRoadmap({
                   </div>
                 )}
                 {typeof selected?.est_minutes === "number" && (
-                  <div className="rounded-[var(--radius-lg)] border border-border bg-muted/30 p-3 shadow-xs">
+                  <div className="p-3 border rounded-[var(--radius-lg)] border-border bg-muted/30 shadow-xs">
                     <div className="text-xs text-muted-foreground">
                       Estimated time
                     </div>
@@ -382,9 +367,8 @@ export default function ZigZagRoadmap({
             )}
           </div>
 
-          <Separator />
-          <SheetFooter className="px-6 py-4 bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
-            <div className="grid w-full grid-cols-3 items-center gap-2">
+          <SheetFooter className="py-4 px-6 border-t bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-border">
+            <div className="grid grid-cols-3 gap-2 items-center w-full">
               <Button
                 variant="outline"
                 disabled={selectedIndex === 0 || selectedIndex == null}
@@ -403,15 +387,17 @@ export default function ZigZagRoadmap({
                 onClick={beginLesson}
                 disabled={selectedState === "locked"}
                 type="button"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-[var(--radius-lg)] shadow motion-safe:animate-in motion-safe:fade-in-10 motion-safe:zoom-in-95"
+                className="flex gap-1 items-center"
               >
                 {selectedState === "locked" ? (
                   <>
-                    <Lock className="mr-2 h-4 w-4" /> Locked
+                    <Lock />
+                    <span>Locked</span>
                   </>
                 ) : (
                   <>
-                    <Play className="mr-2 h-4 w-4" /> Start Lesson
+                    <Play />
+                    <span>Start Lesson</span>
                   </>
                 )}
               </Button>

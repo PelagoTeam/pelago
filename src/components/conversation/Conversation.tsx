@@ -570,7 +570,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
         </HoverCardContent>
       </HoverCard>
       {message.audio_url ? (
-        <div className="p-4 rounded-lg bg-primary">
+        <div className="p-4 rounded-lg shadow bg-primary">
           {url ? (
             <WaveAudioPlayer src={url} height={30} />
           ) : (
@@ -578,7 +578,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
           )}
         </div>
       ) : (
-        <div className="py-2 px-3 rounded-lg bg-muted">
+        <div className="py-2 px-3 rounded-lg shadow bg-muted">
           <p className="font-medium">{message.content}</p>
         </div>
       )}
@@ -627,7 +627,6 @@ function AssistantMessageBubble({
       typeof message.content === "string"
         ? message.content.split("\n").map((s) => s.trim())
         : [];
-    // Fallbacks to avoid runtime surprises
     return {
       native: parts[0] || message.content || "",
       romanization: parts[1] || "",
@@ -671,13 +670,9 @@ function AssistantMessageBubble({
       await el.play();
       setErr(null);
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        setErr(e.message);
-      } else if (typeof e === "string") {
-        setErr(e);
-      } else {
-        setErr("Could not play");
-      }
+      if (e instanceof Error) setErr(e.message);
+      else if (typeof e === "string") setErr(e);
+      else setErr("Could not play");
     }
   };
 
@@ -698,14 +693,14 @@ function AssistantMessageBubble({
     <div className="flex flex-col gap-2 text-left">
       <audio ref={audioRef} preload="auto" className="hidden" />
 
-      <div className="py-2 px-3 rounded-lg bg-background max-w-1/2">
+      <div className="py-2 px-3 rounded-lg shadow bg-background max-w-1/2">
         <p className="font-medium whitespace-pre-wrap">{native}</p>
-        {/* Hints panel (appears only when revealed) */}
+
         {(showRomanization || showEnglish) && (
-          <div className="rounded-lg border bg-card p-3 space-y-1">
+          <div className="p-3 space-y-1 rounded-lg border bg-card">
             {showRomanization && romanization && (
               <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="tracking-wide uppercase text-[10px] text-muted-foreground">
                   Romanization
                 </div>
                 <div className="text-sm">{romanization}</div>
@@ -713,7 +708,7 @@ function AssistantMessageBubble({
             )}
             {showEnglish && english && (
               <div className="pt-2 border-t">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <div className="tracking-wide uppercase text-[10px] text-muted-foreground">
                   English
                 </div>
                 <div className="text-sm">{english}</div>
@@ -722,59 +717,69 @@ function AssistantMessageBubble({
           </div>
         )}
       </div>
-      {hasAnyHints && (
-        <div className="flex items-center gap-2">
-          {!allHintsShown ? (
-            <Button
-              onClick={handleShowHint}
-              variant="secondary"
-              className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-              aria-label={
-                !showRomanization
-                  ? "Show romanization hint"
-                  : "Show English translation"
-              }
-            >
-              {!showRomanization ? "Show hint" : "Show translation"}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                setShowRomanization(false);
-                setShowEnglish(false);
-              }}
-              variant="secondary"
-              className="py-1 px-2 text-xs rounded"
-              aria-label="Hide hints"
-            >
-              Hide hints
-            </Button>
-          )}
-        </div>
-      )}
 
-      {signedUrl && (
-        <div className="flex gap-2 items-center">
-          <Button
-            onClick={handlePlay}
-            variant={"secondary"}
-            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-            aria-label="Play assistant audio"
-          >
-            <PlayIcon fill="black" /> play
-          </Button>
-          <Button
-            onClick={handlePause}
-            variant={"secondary"}
-            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-            aria-label="Pause assistant audio"
-          >
-            <PauseIcon fill="black" /> pause
-          </Button>
-          {err && (
-            <span className="text-xs text-muted-foreground">
-              {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
-            </span>
+      {/* Actions row: hints + audio controls together */}
+      {(hasAnyHints || signedUrl) && (
+        <div className="flex flex-wrap gap-2 items-center mt-2">
+          {hasAnyHints &&
+            (!allHintsShown ? (
+              <Button
+                onClick={handleShowHint}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label={
+                  !showRomanization
+                    ? "Show romanization hint"
+                    : "Show English translation"
+                }
+              >
+                {!showRomanization ? "Show hint" : "Show translation"}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setShowRomanization(false);
+                  setShowEnglish(false);
+                }}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded"
+                aria-label="Hide hints"
+              >
+                Hide hints
+              </Button>
+            ))}
+
+          {signedUrl && (
+            <>
+              <Button
+                onClick={handlePlay}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label="Play assistant audio"
+              >
+                <PlayIcon className="mr-1 w-4 h-4" />
+                Play
+              </Button>
+              <Button
+                onClick={handlePause}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label="Pause assistant audio"
+              >
+                <PauseIcon className="mr-1 w-4 h-4" />
+                Pause
+              </Button>
+
+              {err && (
+                <span className="text-xs text-muted-foreground">
+                  {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
+                </span>
+              )}
+            </>
           )}
         </div>
       )}

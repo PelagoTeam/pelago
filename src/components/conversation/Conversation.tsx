@@ -608,9 +608,7 @@ function AssistantMessageBubble({
       if (!path) return setSignedUrl(null);
 
       try {
-        const res = await fetch(
-          `/api/tts/sign?path=${encodeURIComponent(path)}`,
-        );
+        const res = await fetch(`/api/tts/sign?path=${encodeURIComponent(path)}`);
         const json = await res.json();
         if (!cancelled) setSignedUrl(json?.url ?? null);
       } catch {
@@ -627,7 +625,6 @@ function AssistantMessageBubble({
       typeof message.content === "string"
         ? message.content.split("\n").map((s) => s.trim())
         : [];
-    // Fallbacks to avoid runtime surprises
     return {
       native: parts[0] || message.content || "",
       romanization: parts[1] || "",
@@ -671,13 +668,9 @@ function AssistantMessageBubble({
       await el.play();
       setErr(null);
     } catch (e: unknown) {
-      if (e instanceof Error) {
-        setErr(e.message);
-      } else if (typeof e === "string") {
-        setErr(e);
-      } else {
-        setErr("Could not play");
-      }
+      if (e instanceof Error) setErr(e.message);
+      else if (typeof e === "string") setErr(e);
+      else setErr("Could not play");
     }
   };
 
@@ -700,7 +693,7 @@ function AssistantMessageBubble({
 
       <div className="py-2 px-3 rounded-lg bg-background max-w-1/2">
         <p className="font-medium whitespace-pre-wrap">{native}</p>
-        {/* Hints panel (appears only when revealed) */}
+
         {(showRomanization || showEnglish) && (
           <div className="rounded-lg border bg-card p-3 space-y-1">
             {showRomanization && romanization && (
@@ -722,65 +715,77 @@ function AssistantMessageBubble({
           </div>
         )}
       </div>
-      {hasAnyHints && (
-        <div className="flex items-center gap-2">
-          {!allHintsShown ? (
-            <Button
-              onClick={handleShowHint}
-              variant="secondary"
-              className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-              aria-label={
-                !showRomanization
-                  ? "Show romanization hint"
-                  : "Show English translation"
-              }
-            >
-              {!showRomanization ? "Show hint" : "Show translation"}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => {
-                setShowRomanization(false);
-                setShowEnglish(false);
-              }}
-              variant="secondary"
-              className="py-1 px-2 text-xs rounded"
-              aria-label="Hide hints"
-            >
-              Hide hints
-            </Button>
-          )}
-        </div>
-      )}
 
-      {signedUrl && (
-        <div className="flex gap-2 items-center">
-          <Button
-            onClick={handlePlay}
-            variant={"secondary"}
-            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-            aria-label="Play assistant audio"
-          >
-            <PlayIcon fill="black" /> play
-          </Button>
-          <Button
-            onClick={handlePause}
-            variant={"secondary"}
-            className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
-            aria-label="Pause assistant audio"
-          >
-            <PauseIcon fill="black" /> pause
-          </Button>
-          {err && (
-            <span className="text-xs text-muted-foreground">
-              {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
-            </span>
+      {/* Actions row: hints + audio controls together */}
+      {(hasAnyHints || signedUrl) && (
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {hasAnyHints && (
+            !allHintsShown ? (
+              <Button
+                onClick={handleShowHint}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label={
+                  !showRomanization
+                    ? "Show romanization hint"
+                    : "Show English translation"
+                }
+              >
+                {!showRomanization ? "Show hint" : "Show translation"}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setShowRomanization(false);
+                  setShowEnglish(false);
+                }}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded"
+                aria-label="Hide hints"
+              >
+                Hide hints
+              </Button>
+            )
+          )}
+
+          {signedUrl && (
+            <>
+              <Button
+                onClick={handlePlay}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label="Play assistant audio"
+              >
+                <PlayIcon className="mr-1 h-4 w-4" />
+                Play
+              </Button>
+              <Button
+                onClick={handlePause}
+                variant="secondary"
+                size="sm"
+                className="py-1 px-2 text-xs rounded bg-muted hover:bg-muted/80"
+                aria-label="Pause assistant audio"
+              >
+                <PauseIcon className="mr-1 h-4 w-4" />
+                Pause
+              </Button>
+
+              {err && (
+                <span className="text-xs text-muted-foreground">
+                  {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
+                </span>
+              )}
+            </>
           )}
         </div>
       )}
     </div>
   );
 }
+
 
 const GIFS = {
   neutral: "/avatar/neutral.gif",
@@ -841,14 +846,14 @@ async function getConversation(
     .eq("conversation_id", conversation_id)
     .order("created_at", { ascending: true })
     .single()) as {
-    data: {
-      title: string;
-      difficulty: string;
-      language: string;
-      themes: { location: string };
+      data: {
+        title: string;
+        difficulty: string;
+        language: string;
+        themes: { location: string };
+      };
+      error: Error | null;
     };
-    error: Error | null;
-  };
 
   if (e) throw e;
   return {

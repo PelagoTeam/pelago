@@ -557,7 +557,7 @@ function UserMessageBubble({ message }: { message: UserMessage }) {
       <HoverCard>
         <HoverCardTrigger>
           <InfoIcon
-            className={`w-5 ${message.pending ? "animate-pulse" : ""}`}
+            className={`w-5 text-white ${message.pending ? "animate-pulse" : ""}`}
           />
         </HoverCardTrigger>
         <HoverCardContent
@@ -715,6 +715,11 @@ function AssistantMessageBubble({
             )}
           </div>
         )}
+        {err && (
+          <span className="text-xs text-muted-foreground">
+            {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
+          </span>
+        )}
       </div>
 
       {/* Actions row: hints + audio controls together */}
@@ -772,12 +777,6 @@ function AssistantMessageBubble({
                 <PauseIcon className="mr-1 w-4 h-4" />
                 Pause
               </Button>
-
-              {err && (
-                <span className="text-xs text-muted-foreground">
-                  {isLatestAssistant ? "(autoplay blocked — tap play)" : ""}
-                </span>
-              )}
             </>
           )}
         </div>

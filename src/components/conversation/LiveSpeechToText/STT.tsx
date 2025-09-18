@@ -177,12 +177,15 @@ async function startPcmCapture(opts: {
   src.connect(node);
   node.connect(audioCtx.destination); // keep graph alive (silent)
 
+  let stopped = false;
   const stop = () => {
+    if (stopped) return;
+    stopped = true;
     try {
       window.clearInterval(levelTimer);
       node.disconnect();
       src.disconnect();
-      audioCtx.close();
+      if (audioCtx.state !== "closed") void audioCtx.close();
       media.getTracks().forEach((t) => t.stop());
     } catch {}
   };
@@ -422,13 +425,15 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   }
 
   async function stop() {
-    if (stateRef.current === "stopped") return;
+    if (stateRef.current === "stopped" || stateRef.current === "stopping")
+      return;
     setSt("stopping");
     try {
       wsRef.current?.close();
     } catch {}
     try {
       stopPcmRef.current?.();
+      stopPcmRef.current = null;
     } catch {}
 
     let blob: Blob | null = null;
@@ -454,13 +459,24 @@ const LiveSTT = React.forwardRef<LiveSTTHandle, LiveSTTProps>(function LiveSTT(
   useEffect(() => {
     onReady?.();
     return () => {
+      const ws = wsRef.current;
+      wsRef.current = null;
+
+      const stopPcm = stopPcmRef.current;
+      stopPcmRef.current = null;
+
+      const tick = tickTimerRef.current;
+      tickTimerRef.current = null;
+
+      if (tick != null) window.clearInterval(tick);
+
       try {
-        wsRef.current?.close();
+        if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+        else if (ws && ws.readyState === WebSocket.CONNECTING) ws.close();
       } catch {}
       try {
-        stopPcmRef.current?.();
+        stopPcm?.();
       } catch {}
-      if (tickTimerRef.current) window.clearInterval(tickTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

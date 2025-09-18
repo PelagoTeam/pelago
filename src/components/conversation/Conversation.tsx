@@ -18,7 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Profile } from "@/lib/types";
 import LiveSTT, { LiveSttState } from "./LiveSpeechToText/STT";
 import { buildWsUrlFromProfile } from "@/lib/languages";
-import AudioPlayer from "./LiveSpeechToText/AudioPlayer";
 import { uploadRecordingAndGetUrl } from "./LiveSpeechToText/saveAudio";
 import { cn } from "@/lib/utils";
 import WaveAudioPlayer from "./LiveSpeechToText/AudioPlayer";
@@ -140,9 +139,9 @@ export default function Conversation({
     const prevBlob = recordBlob;
     const transcript = recordedAudioTranscribe.text.trim();
 
-    setLoading(true);
-    setUsingAudio(false);
     stateRef.current = "idle";
+    setUsingAudio(false);
+    setLoading(true);
 
     // optimistic: add pending user message (audio)
     const supabase = createClient();
@@ -476,9 +475,9 @@ export default function Conversation({
         </div>
       </div>
       <div className="flex z-10 gap-3 justify-end items-center p-3 w-full border-t bg-background">
-        {recordBlob && url && (
+        {recordBlob && url && usingAudio && (
           <div className="inline-block py-2 px-4 rounded-2xl bg-primary min-w-1/2">
-            <AudioPlayer src={url} height={30} />
+            <WaveAudioPlayer src={url} height={30} />
           </div>
         )}
         {!usingAudio && (

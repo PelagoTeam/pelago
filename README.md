@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pelago SEA-LION: Speak SEA 🌏🗣️
 
-## Getting Started
+## Breaking language barriers for tourists in Southeast Asia
 
-First, run the development server:
+Over **1,200+ languages** are spoken in SEA, but most are missing from mainstream apps.  
+**Speak SEA** helps tourists learn _real, useful_ phrases + culture through **AI role-plays and micro-lessons**, powered by **SEA-LION LLM**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚩 Problem
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Tourists feel lost with local languages/slang.
+- Culture & etiquette often missing → awkward experiences.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 💡 Solution
 
-To learn more about Next.js, take a look at the following resources:
+- **Coach Mode**: Fast Duolingo-style drills.
+- **Role-play Mode**: AI acts as hawker, Grab driver, vendor.
+- **Cultural Tips**: Etiquette, slang (“lah”, “khrap/kha”), gestures.
+- **Tourist Packs**: Dining, shopping, transit, emergencies.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠️ Tech
 
-## Deploy on Vercel
+- **Frontend**: Next.js + Tailwind
+- **Backend**: Node.js
+- **AI**: SEA-LION LLM endpoint
+- **Extras**: Supabase (PostgreSQL, Audio Storage, Image Storage), AWS Sage Maker
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🎥 Walkthrough
+
+- Pick a tourist scenario.
+- Try a Role-play with the AI vendor.
+- Get instant feedback + cultural tips.
+
+---
+
+## 🔮 Future Works
+
+- Offline PWA mode for travelers without data.
+- More SEA languages (Khmer, Burmese).
